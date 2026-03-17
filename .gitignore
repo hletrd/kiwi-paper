@@ -4,5 +4,8 @@
 *~
 .env
 node_modules/
+renderer/node_modules/
 __pycache__/
 .omc/
+dist/
+output/

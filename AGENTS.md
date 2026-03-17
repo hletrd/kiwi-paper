@@ -36,13 +36,33 @@ kiwi-paper/
 ├── SKILL.md           # 스킬 정의 (핵심 파일)
 ├── README.md          # 프로젝트 소개
 ├── LICENSE            # MIT 라이선스
-├── install.sh         # 스킬 설치 스크립트
+├── install.sh         # 스킬 + 렌더러 설치 스크립트
 ├── .gitignore
-└── examples/
-    └── attention-is-all-you-need.md  # 예제 출력
+├── examples/
+│   └── attention-is-all-you-need.md  # 예제 출력
+└── renderer/          # Markdown → HTML 렌더러
+    ├── package.json   # ESM 패키지 (Node.js >= 20)
+    └── src/
+        ├── render.mjs    # CLI 엔트리 포인트
+        └── template.mjs  # HTML 템플릿 (CSS/JS 인라인)
 ```
 
 ## 에이전트별 작업 가이드
+
+### 렌더러 작업 시
+
+1. `renderer/` 디렉토리는 독립 Node.js 패키지 (ESM, `"type": "module"`)
+2. 엔트리 포인트: `renderer/src/render.mjs` — CLI (`-i`, `-o` 필수 옵션)
+3. 템플릿: `renderer/src/template.mjs` — `renderPage()`, `renderIndexPage()` export
+4. 의존성 변경 시 `cd renderer && npm install` 필요
+5. 테스트: `node renderer/src/render.mjs -i examples/ -o dist/`
+
+CLI 인터페이스:
+```
+node render.mjs -i <path|url...> -o <dir> [--title <str>] [--no-toc] [--single]
+```
+
+파이프라인: marked (GFM) → footnotes → KaTeX (서버사이드) → Shiki (듀얼 테마) → heading IDs → .md→.html 링크 변환
 
 ### 스킬 수정/개선 시
 

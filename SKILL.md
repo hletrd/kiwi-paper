@@ -54,10 +54,12 @@ AskUserQuestion:
   question: "출력 형식을 선택해주세요."
   header: "출력 형식"
   options:
-    - label: "마크다운 + HTML (Recommended)"
-      description: "마크다운 문서를 생성한 뒤 자동으로 HTML 렌더링까지 수행합니다"
+    - label: "HTML (Recommended)"
+      description: "나무위키 스타일 HTML로 렌더링합니다 (다크/라이트 모드, 목차, 수식 등)"
+    - label: "HTML + 마크다운"
+      description: "HTML과 함께 마크다운 원본도 내보냅니다"
     - label: "마크다운만"
-      description: "마크다운 문서만 생성합니다 (HTML 렌더링 생략)"
+      description: "마크다운 문서만 생성합니다 (렌더러 미설치 환경용)"
 ```
 
 ### 3단계: 출력 경로
@@ -133,7 +135,7 @@ PDF 내용을 읽고 나무위키 스타일의 초안을 작성합니다.
 
 ### 4단계: HTML 렌더링 (Render)
 
-사용자가 "마크다운 + HTML" 출력을 선택한 경우 자동 실행됩니다.
+기본 출력 형식입니다. 사용자가 "마크다운만"을 선택하지 않는 한 항상 실행됩니다.
 
 마크다운 파일을 저장한 뒤, 내장 렌더러를 실행하여 HTML을 생성합니다:
 
