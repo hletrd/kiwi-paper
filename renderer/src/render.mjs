@@ -33,6 +33,7 @@ program
   .option('-t, --title <string>', 'Document title (default: first H1 or filename)')
   .option('--no-toc', 'Disable table of contents sidebar')
   .option('--single', 'Force single-file mode (no index page)')
+  .option('--no-images', 'Disable image downloading')
   .parse();
 
 const opts = program.opts();
@@ -61,7 +62,11 @@ async function main() {
   // Render each file
   const rendered = [];
   for (const file of files) {
-    const md = file.content;
+    let md = file.content;
+    // Download images if enabled
+    if (opts.images !== false && (file.sourceUrl || md.match(/!\[.*?\]\(https?:\/\//))) {
+      md = await downloadImages(md, outputDir, file.sourceUrl);
+    }
     const headings = extractHeadings(md);
     const title = opts.title || extractTitle(md) || file.name;
     const html = await marked.parse(md);
@@ -123,7 +128,7 @@ async function collectInputs(inputs) {
     if (isUrl(input)) {
       const content = await fetchUrl(input);
       const name = urlToFilename(input);
-      files.push({ name, content });
+      files.push({ name, content, sourceUrl: input });
     } else {
       const p = resolve(input);
       if (!existsSync(p)) {
@@ -136,10 +141,10 @@ async function collectInputs(inputs) {
           .filter((f) => /\.md$/i.test(f))
           .sort();
         for (const f of mdFiles) {
-          files.push({ name: f, content: readFileSync(join(p, f), 'utf8') });
+          files.push({ name: f, content: readFileSync(join(p, f), 'utf8'), sourceUrl: null });
         }
       } else {
-        files.push({ name: basename(p), content: readFileSync(p, 'utf8') });
+        files.push({ name: basename(p), content: readFileSync(p, 'utf8'), sourceUrl: null });
       }
     }
   }
@@ -193,6 +198,11 @@ function htmlToBasicMarkdown(html) {
     .replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '- $1\n')
     .replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, '\n> $1\n');
 
+  // Preserve images
+  text = text.replace(/<img[^>]*src="([^"]*)"[^>]*(?:alt="([^"]*)")?[^>]*\/?>/gi, (_, src, alt) => `\n![${alt || ''}](${src})\n`);
+  // Also handle img tags where alt comes before src
+  text = text.replace(/<img[^>]*alt="([^"]*)"[^>]*src="([^"]*)"[^>]*\/?>/gi, (_, alt, src) => `\n![${alt || ''}](${src})\n`);
+
   // Strip remaining tags
   text = text.replace(/<[^>]+>/g, '');
 
@@ -208,6 +218,76 @@ function htmlToBasicMarkdown(html) {
     .trim();
 
   return text;
+}
+
+// ---------------------------------------------------------------------------
+// Image extraction and download
+// ---------------------------------------------------------------------------
+async function downloadImages(markdown, outputDir, sourceUrl) {
+  const imgDir = join(outputDir, 'images');
+  let modified = markdown;
+  const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  const matches = [...markdown.matchAll(imgRegex)];
+
+  if (matches.length === 0) return modified;
+
+  mkdirSync(imgDir, { recursive: true });
+  let downloaded = 0;
+
+  for (const match of matches) {
+    const [full, alt, src] = match;
+
+    // Skip data URIs and local files that already exist
+    if (src.startsWith('data:') || (existsSync(src) && !isUrl(src))) continue;
+
+    // Resolve relative URLs
+    let imgUrl = src;
+    if (!isUrl(src) && sourceUrl) {
+      try {
+        imgUrl = new URL(src, sourceUrl).href;
+      } catch { continue; }
+    }
+
+    if (!isUrl(imgUrl)) continue;
+
+    try {
+      const imgRes = await fetch(imgUrl, {
+        headers: { 'User-Agent': 'kiwi-paper-renderer/1.0' },
+        signal: AbortSignal.timeout(15000)
+      });
+      if (!imgRes.ok) continue;
+
+      const contentType = imgRes.headers.get('content-type') || '';
+      const ext = getImageExt(contentType, imgUrl);
+      const imgName = `img-${String(downloaded + 1).padStart(2, '0')}${ext}`;
+      const imgPath = join(imgDir, imgName);
+
+      const buffer = Buffer.from(await imgRes.arrayBuffer());
+      writeFileSync(imgPath, buffer);
+
+      // Replace URL in markdown with local path
+      modified = modified.replace(full, `![${alt}](images/${imgName})`);
+      downloaded++;
+      console.log(`  ↓ Image: ${imgName}`);
+    } catch (err) {
+      // Skip failed downloads silently
+    }
+  }
+
+  if (downloaded > 0) console.log(`  ✓ ${downloaded} image(s) downloaded`);
+  return modified;
+}
+
+function getImageExt(contentType, url) {
+  if (contentType.includes('png')) return '.png';
+  if (contentType.includes('jpeg') || contentType.includes('jpg')) return '.jpg';
+  if (contentType.includes('gif')) return '.gif';
+  if (contentType.includes('webp')) return '.webp';
+  if (contentType.includes('svg')) return '.svg';
+  // Try from URL
+  const urlExt = url.match(/\.(png|jpe?g|gif|webp|svg|bmp|tiff?)(\?|$)/i);
+  if (urlExt) return '.' + urlExt[1].toLowerCase();
+  return '.png'; // default
 }
 
 function urlToFilename(url) {
@@ -303,6 +383,11 @@ async function initMarked() {
           })
           .join('');
         return `<div style="overflow-x:auto"><table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
+      },
+      image({ href, title, text }) {
+        const titleAttr = title ? ` title="${title}"` : '';
+        const altText = text || '';
+        return `<figure class="wiki-figure"><img src="${href}" alt="${altText}"${titleAttr} loading="lazy"><figcaption>${altText}</figcaption></figure>`;
       },
     },
   });

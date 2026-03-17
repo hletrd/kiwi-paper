@@ -462,8 +462,24 @@ section.footnotes li { margin: 0.3em 0; }
 /* --- KaTeX --- */
 .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.4em 0; }
 
-/* --- Images --- */
-img { max-width: 100%; height: auto; margin: 0.5em 0; }
+/* --- Images / Figures --- */
+img { max-width: 100%; height: auto; }
+.wiki-figure {
+  margin: 1em 0;
+  text-align: center;
+}
+.wiki-figure img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.wiki-figure figcaption {
+  margin-top: 0.5em;
+  font-size: 0.88em;
+  color: var(--text-muted);
+  text-align: center;
+}
 
 /* --- Navigation --- */
 .page-nav {
