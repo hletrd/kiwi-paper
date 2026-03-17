@@ -146,11 +146,12 @@ node src/render.mjs -i https://example.com/doc.md -o ../dist
 
 ## 호환성
 
-| 도구 | 방식 |
-|------|------|
-| [Claude Code](https://claude.com/claude-code) | `/kiwi-paper` 스킬로 직접 실행 |
-| [OpenCode](https://github.com/nicepkg/OpenCode) | `AGENTS.md` 참고 |
-| [Codex](https://github.com/openai/codex) | `AGENTS.md` 참고 |
+| 도구 | 방식 | 설정 파일 |
+|------|------|-----------|
+| [Claude Code](https://claude.com/claude-code) | `/kiwi-paper` 스킬로 직접 실행 | `SKILL.md` |
+| [OpenCode](https://github.com/nicepkg/OpenCode) | `OPENCODE.md` → `SKILL.md` 참고 | `OPENCODE.md` |
+| [Codex](https://github.com/openai/codex) | `CODEX.md` → `SKILL.md` 참고 | `CODEX.md` |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `GEMINI.md` → `SKILL.md` 참고 | `GEMINI.md` |
 
 ## 기여
 
