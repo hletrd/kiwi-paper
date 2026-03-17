@@ -85,6 +85,7 @@ ${shikiCss ? `<style>${shikiCss}</style>` : ''}
         <label><input type="radio" name="theme" value="auto" checked> 자동 (시스템 설정)</label>
         <label><input type="radio" name="theme" value="light"> 라이트</label>
         <label><input type="radio" name="theme" value="dark"> 다크</label>
+        <label><input type="radio" name="theme" value="black"> 검은 화면 (AMOLED)</label>
       </div>
     </div>
     <div class="settings-group">
@@ -299,6 +300,32 @@ function getStyles() {
   --link-hover: #b3771d;
 
   --shadow-category: 0.15rem 0.15rem 0 0 #333;
+}
+
+/* --- AMOLED Black Theme --- */
+[data-theme="black"] {
+  --bg-page: #000000;
+  --bg-content: #000000;
+  --bg-header: #111111;
+  --bg-code: #0d0d0d;
+  --bg-blockquote: #0a0a0a;
+  --bg-toc-title: #0d0d0d;
+  --bg-table-header: #111111;
+
+  --text-primary: #e0e0e0;
+  --text-muted: #888888;
+  --text-del: #666666;
+
+  --border: #222222;
+  --border-heading: #333333;
+  --border-blockquote: #444444;
+  --border-footnote: #444444;
+
+  --link-color: #E69720;
+  --link-external: #E69720;
+  --link-hover: #b3771d;
+
+  --shadow-category: none;
 }
 
 /* --- Base --- */
@@ -778,6 +805,25 @@ body.font-small { font-size: 13px; }
 body.font-large { font-size: 17px; }
 body.font-xlarge { font-size: 19px; }
 
+/* --- Inline Footnote Mode --- */
+body.fn-inline .footnote-ref a {
+  cursor: default;
+  pointer-events: none;
+}
+body.fn-inline .footnote-ref::after {
+  content: attr(data-fn-text);
+  display: inline;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--bg-blockquote);
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  margin-left: 4px;
+  vertical-align: baseline;
+  font-weight: normal;
+  line-height: 1.5;
+}
+
 /* --- Footnote Popover --- */
 .fn-popover {
   z-index: 2000;
@@ -947,6 +993,7 @@ function getSettingsScript() {
     document.body.classList.toggle('no-table-wrap', !settings['table-wrap']);
     document.body.classList.toggle('no-ext-icon', !settings['ext-link-icon']);
     document.body.classList.toggle('fold-sections', settings['fold-sections']);
+    document.body.classList.toggle('fn-inline', settings['fn-mode'] === 'inline');
     document.body.classList.remove('font-small', 'font-large', 'font-xlarge');
     if (settings['font-size'] !== 'default') document.body.classList.add('font-' + settings['font-size']);
 
@@ -981,6 +1028,18 @@ function getSettingsScript() {
   // System theme change listener
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
     if (settings.theme === 'auto') applyTheme('auto');
+  });
+
+  // Populate footnote inline text (for inline mode)
+  document.querySelectorAll('.footnote-ref').forEach(function(ref) {
+    var link = ref.querySelector('a');
+    if (!link) return;
+    var id = link.getAttribute('href')?.replace('#', '');
+    var fn = document.getElementById(id);
+    if (fn) {
+      var text = fn.textContent?.replace(/\\s+/g, ' ').replace(/↩$/, '').trim();
+      if (text) ref.setAttribute('data-fn-text', text);
+    }
   });
 
   // Footnote popover
