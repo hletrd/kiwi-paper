@@ -198,10 +198,13 @@ function htmlToBasicMarkdown(html) {
     .replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '- $1\n')
     .replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, '\n> $1\n');
 
-  // Preserve images
-  text = text.replace(/<img[^>]*src="([^"]*)"[^>]*(?:alt="([^"]*)")?[^>]*\/?>/gi, (_, src, alt) => `\n![${alt || ''}](${src})\n`);
-  // Also handle img tags where alt comes before src
-  text = text.replace(/<img[^>]*alt="([^"]*)"[^>]*src="([^"]*)"[^>]*\/?>/gi, (_, alt, src) => `\n![${alt || ''}](${src})\n`);
+  // Preserve images (handles any attribute order)
+  text = text.replace(/<img[^>]*?\/?>/gi, (tag) => {
+    const srcMatch = tag.match(/src=["']([^"']+)["']/i);
+    const altMatch = tag.match(/alt=["']([^"']*?)["']/i);
+    if (!srcMatch) return '';
+    return `\n![${altMatch ? altMatch[1] : ''}](${srcMatch[1]})\n`;
+  });
 
   // Strip remaining tags
   text = text.replace(/<[^>]+>/g, '');
@@ -258,6 +261,7 @@ async function downloadImages(markdown, outputDir, sourceUrl) {
       if (!imgRes.ok) continue;
 
       const contentType = imgRes.headers.get('content-type') || '';
+      if (contentType && !contentType.startsWith('image/') && !contentType.includes('svg')) continue;
       const ext = getImageExt(contentType, imgUrl);
       const imgName = `img-${String(downloaded + 1).padStart(2, '0')}${ext}`;
       const imgPath = join(imgDir, imgName);
@@ -266,7 +270,7 @@ async function downloadImages(markdown, outputDir, sourceUrl) {
       writeFileSync(imgPath, buffer);
 
       // Replace URL in markdown with local path
-      modified = modified.replace(full, `![${alt}](images/${imgName})`);
+      modified = modified.split(full).join(`![${alt}](images/${imgName})`);
       downloaded++;
       console.log(`  ↓ Image: ${imgName}`);
     } catch (err) {
@@ -387,7 +391,8 @@ async function initMarked() {
       image({ href, title, text }) {
         const titleAttr = title ? ` title="${title}"` : '';
         const altText = text || '';
-        return `<figure class="wiki-figure"><img src="${href}" alt="${altText}"${titleAttr} loading="lazy"><figcaption>${altText}</figcaption></figure>`;
+        const caption = altText ? `<figcaption>${altText}</figcaption>` : '';
+        return `<figure class="wiki-figure"><img src="${href}" alt="${altText}"${titleAttr} loading="lazy">${caption}</figure>`;
       },
     },
   });
