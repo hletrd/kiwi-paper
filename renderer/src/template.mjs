@@ -159,12 +159,12 @@ function getStyles() {
   --bg-page: #f5f5f5;
   --bg-content: #ffffff;
   --bg-header: #f5f8fa;
-  --bg-code: #f5f8fa;
+  --bg-code: #eeeeee;
   --bg-blockquote: #eeeeee;
   --bg-toc-title: #f5f8fa;
   --bg-table-header: #f5f5f5;
 
-  --text-primary: #373a3c;
+  --text-primary: #212529;
   --text-muted: #6e7478;
   --text-del: gray;
 
@@ -211,11 +211,11 @@ function getStyles() {
 html { font-size: 15px; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
 body {
-  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans Korean', 'Noto Sans KR', 'Nanum Gothic', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  font-size: 0.95rem;
+  font-family: 'Pretendard JP Variable', 'Pretendard Variable', Pretendard, -apple-system, system-ui, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Noto Sans Korean', 'Nanum Gothic', sans-serif;
+  font-size: 15px;
   background: var(--bg-page);
   color: var(--text-primary);
-  line-height: 1.7;
+  line-height: 1.5;
   word-break: keep-all;
   overflow-wrap: break-word;
   transition: background 0.2s, color 0.2s;
@@ -223,7 +223,7 @@ body {
 
 /* --- Wiki Wrapper --- */
 .wiki-wrapper {
-  max-width: 900px;
+  max-width: 1400px;
   margin: 0 auto;
   background: var(--bg-content);
   min-height: 100vh;
@@ -290,20 +290,18 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   color: var(--text-primary);
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin: 2.16em 0 1.44em;
   padding-bottom: 5px;
   border-bottom: 1px solid var(--border-heading);
   scroll-margin-top: 1rem;
   line-height: 1.4;
 }
-/* In-article h1 is rarely used (title is outside), but style it */
-.wiki-article h1 { font-size: 2.0rem; }
-.wiki-article h2 { font-size: 1.8rem; }
-.wiki-article h3 { font-size: 1.6rem; }
-.wiki-article h4 { font-size: 1.5rem; }
-.wiki-article h5 { font-size: 1.3rem; border-bottom: none; }
-.wiki-article h6 { font-size: 1.1rem; border-bottom: none; }
+.wiki-article h1 { font-size: 30px; }
+.wiki-article h2 { font-size: 27px; }
+.wiki-article h3 { font-size: 24px; border-bottom: none; }
+.wiki-article h4 { font-size: 22.5px; border-bottom: none; }
+.wiki-article h5 { font-size: 19.5px; border-bottom: none; }
+.wiki-article h6 { font-size: 16.5px; border-bottom: none; }
 
 p { margin: 0.6em 0; }
 
@@ -339,8 +337,8 @@ li > ul, li > ol { margin: 0.15em 0; }
 blockquote {
   border-left: 5px solid var(--border-blockquote);
   background: var(--bg-blockquote);
-  padding: 0.8em 1em;
-  margin: 0.8em 0;
+  padding: 15px;
+  margin: 15px 0;
   border-radius: 0 var(--radius) var(--radius) 0;
   color: var(--text-primary);
 }
@@ -349,10 +347,10 @@ blockquote blockquote { margin: 0.5em 0; }
 
 /* --- Code --- */
 code {
-  font-family: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
-  font-size: 0.88em;
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 15px;
   background: var(--bg-code);
-  border: 1px solid var(--border);
+  border: 1px solid #ddd;
   padding: 0.12em 0.35em;
   border-radius: var(--radius);
 }
@@ -370,7 +368,7 @@ pre code {
   background: none;
   border: none;
   padding: 0;
-  font-size: 0.85em;
+  font-size: 15px;
 }
 
 /* Shiki dual theme */
@@ -388,7 +386,7 @@ table {
   font-size: 0.92em;
 }
 th, td {
-  padding: 0.3rem 0.6rem;
+  padding: 5px 10px;
   border: 1px solid #dddddd;
   text-align: left;
 }
