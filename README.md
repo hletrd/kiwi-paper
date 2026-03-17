@@ -15,6 +15,21 @@
 
 ---
 
+## 미리보기
+
+| 라이트 모드 | 다크 모드 |
+|:---:|:---:|
+| ![Light](examples/screenshot-light.png) | ![Dark](examples/screenshot-dark.png) |
+
+<details>
+<summary>모바일 미리보기</summary>
+
+<div align="center">
+<img src="examples/screenshot-mobile.png" width="300" alt="Mobile">
+</div>
+
+</details>
+
 ## 이게 뭔데
 
 30페이지짜리 논문 앞에서 졸음과 싸우고 있다면, kiwi-paper가 그 논문을 나무위키 스타일로 바꿔줍니다.
