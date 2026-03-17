@@ -225,6 +225,7 @@ body {
 .wiki-wrapper {
   max-width: 1400px;
   margin: 0 auto;
+  padding: 0 16px;
   background: var(--bg-content);
   min-height: 100vh;
   border-left: 1px solid var(--border);
@@ -290,23 +291,30 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   color: var(--text-primary);
-  margin: 2.16em 0 1.44em;
   padding-bottom: 5px;
   border-bottom: 1px solid var(--border-heading);
   scroll-margin-top: 1rem;
-  line-height: 1.4;
+  line-height: 1.5;
 }
-.wiki-article h1 { font-size: 30px; }
-.wiki-article h2 { font-size: 27px; }
-.wiki-article h3 { font-size: 24px; border-bottom: none; }
+.wiki-article h1 { font-size: 36px; }
+.wiki-article h2 { font-size: 27px; margin: 32.4px 0 21.6px; }
+.wiki-article h3 { font-size: 24px; margin: 28.8px 0 19.2px; }
 .wiki-article h4 { font-size: 22.5px; border-bottom: none; }
 .wiki-article h5 { font-size: 19.5px; border-bottom: none; }
 .wiki-article h6 { font-size: 16.5px; border-bottom: none; }
 
-p { margin: 0.6em 0; }
+p { margin: 0; font-size: 14.4px; line-height: 21.6px; }
 
 a { color: var(--link-color); text-decoration: none; transition: color 0.1s; }
 a:hover { color: var(--link-hover); text-decoration: underline; }
+
+.wiki-article a:not([href^="http"]):not(.footnote-ref):not(.footnote-backref) {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.wiki-article a:not([href^="http"]):not(.footnote-ref):not(.footnote-backref):hover {
+  color: var(--link-color);
+}
 
 /* External links get a subtle icon */
 a[href^="http"]:not([href*="kiwi-paper"])::after {
@@ -323,14 +331,14 @@ mark { background: #fef08a; padding: 0.1em 0.2em; border-radius: 2px; }
 
 hr {
   border: none;
-  height: 1px;
-  background: var(--border);
-  margin: 2em 0;
+  border-top: 1px solid #cccccc;
+  margin: 7.5px 0;
+  height: 0;
 }
 
 /* --- Lists --- */
-ul, ol { padding-left: 1.5em; margin: 0.5em 0; }
-li { margin: 0.25em 0; }
+ul, ol { padding: 0 0 0 1.5em; margin: 0; }
+li { margin: 0; padding: 0; line-height: 21.6px; }
 li > ul, li > ol { margin: 0.15em 0; }
 
 /* --- Blockquotes (namu.wiki style: green left border) --- */
@@ -339,7 +347,7 @@ blockquote {
   background: var(--bg-blockquote);
   padding: 15px;
   margin: 15px 0;
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-radius: 0;
   color: var(--text-primary);
 }
 blockquote p { margin: 0.3em 0; }
@@ -449,6 +457,7 @@ section.footnotes li { margin: 0.3em 0; }
   line-height: 0;
 }
 .footnote-ref a { color: var(--namu-brand); }
+.footnote-ref a { color: #0275d8; font-size: 12px; font-weight: normal; }
 .footnote-backref { text-decoration: none; margin-left: 0.3em; color: var(--namu-brand); }
 
 /* --- KaTeX --- */
