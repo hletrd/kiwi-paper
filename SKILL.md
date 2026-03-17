@@ -120,17 +120,69 @@ AskUserQuestion:
 - 그림을 직접 추출할 수 없으면 **반드시 `WebSearch`로 해당 그림의 공개 버전을 찾아서 삽입**
 - 그래도 없으면 텍스트로 상세 묘사 + 원문 참조 안내
 
-#### PDF 이미지 적극 추출
+#### PDF/arXiv 이미지 적극 추출 (가장 중요!)
 
-1. `Read` 도구로 PDF를 읽을 때 **모든 페이지의 그림을 주의 깊게 확인**
-2. PDF에서 보이는 그림마다:
-   - 그림의 내용을 정확히 파악
-   - `WebSearch`로 해당 논문/문서의 그림을 검색:
-     - `"논문제목" figure 1` 또는 `"논문제목" architecture diagram`
-     - arXiv 논문이면 `arxiv 논문번호 figure` 로 검색
-     - 유명 논문이면 블로그 해설 글에서 그림을 가져올 수 있음
-   - `WebFetch`로 이미지 URL을 확인하고 마크다운에 삽입
-3. 표(Table)도 마찬가지: 원본의 표를 마크다운 표로 **정확히** 재현
+**PDF에서 그림이 보이면 반드시 아래 절차를 따른다. 건너뛰지 않는다.**
+
+##### Step 1: PDF 읽으면서 모든 Figure/Table 목록 만들기
+
+`Read` 도구로 PDF를 읽을 때, 보이는 모든 그림/표를 기록한다:
+```
+Figure 1: 시스템 아키텍처 다이어그램
+Figure 2: 실험 결과 그래프
+Table 1: 모델 비교표
+...
+```
+
+##### Step 2: arXiv 논문이면 ar5iv HTML 버전에서 이미지 URL 추출
+
+arXiv 논문(arxiv.org/abs/XXXX.XXXXX)이면:
+
+1. **ar5iv HTML 버전 확인**: `WebFetch`로 `https://ar5iv.labs.arxiv.org/html/XXXX.XXXXX` 접속
+2. HTML에서 `<img>` 태그의 `src` 속성을 추출 — 보통 `extracted/` 경로에 PNG/SVG 파일이 있음
+3. 각 이미지 URL을 마크다운에 삽입: `![Figure 1](https://ar5iv.labs.arxiv.org/html/XXXX.XXXXX/extracted/xxx/fig1.png)`
+
+ar5iv가 아직 처리 안 된 논문이면 Step 3으로.
+
+##### Step 3: WebSearch로 그림 찾기
+
+각 Figure마다 **반드시** `WebSearch`를 실행한다:
+
+```
+WebSearch: "논문제목" figure 1
+WebSearch: "논문제목" architecture diagram
+WebSearch: "논문제목" arxiv figure
+WebSearch: arxiv XXXX.XXXXX figure
+WebSearch: "논문제목" blog explanation  (해설 블로그에 그림 있는 경우 많음)
+WebSearch: "논문제목" site:medium.com OR site:towardsdatascience.com
+WebSearch: "논문제목" site:github.com  (GitHub README에 그림 있는 경우)
+```
+
+검색 결과에서 이미지 URL을 찾으면 `WebFetch`로 해당 페이지를 확인하고, `<img>` 태그에서 실제 이미지 URL을 추출해서 마크다운에 삽입한다.
+
+##### Step 4: 그래도 없으면 — 대체 전략
+
+1. **논문의 GitHub 저장소**: 많은 논문이 GitHub에 코드+그림을 공개함. `WebSearch: "논문제목" github`
+2. **발표 슬라이드**: `WebSearch: "논문제목" slides OR presentation`
+3. **트위터/X 스레드**: 저자가 논문 소개하면서 그림 공유하는 경우 많음
+4. **최후의 수단**: 그림을 텍스트로 상세히 묘사 + ASCII 아트 + 원문 참조 안내
+
+```markdown
+> **[그림 1]** 시스템 아키텍처 (원문 Figure 1 참조)
+>
+> 시스템은 크게 3개 모듈로 구성된다:
+> - 입력 모듈: 센서 데이터를 받아 전처리
+> - 처리 모듈: 경로 계획 및 장애물 회피
+> - 출력 모듈: 모터 제어 신호 생성
+>
+> ~~직접 그리고 싶지만 ASCII 아트의 한계가 있다~~
+```
+
+**절대 하면 안 되는 것**: 그림이 있었는데 "그림은 원문을 참조하세요"로 넘어가기. 최소한 상세 묘사는 해야 한다.
+
+##### Step 5: 표(Table) 재현
+
+원본의 모든 표를 마크다운 표로 **정확히** 재현한다. 숫자, 단위, 볼드 하나 틀리지 않게.
 
 #### URL 입력 이미지 수집
 
@@ -199,7 +251,9 @@ WebSearch: "논문/제품명" + site:github.com / site:medium.com / site:towards
 
 ### 1단계: 초안 작성 (Draft)
 
-PDF 내용을 읽고 나무위키 스타일의 초안을 작성합니다.
+입력 문서를 읽고 나무위키 스타일의 초안을 작성합니다.
+
+> ⚠️ **이미지 필수**: 초안 작성 시 원본의 모든 Figure/Table을 `![](url)` 형태로 삽입해야 합니다. "나중에 넣지" 하면 안 됩니다. 이미지 URL이 없으면 지금 바로 `WebSearch`로 찾으세요. 위 "리소스 및 첨부파일 처리" 섹션의 Step 1~5를 따르세요.
 
 - 원문의 구조를 파악하고 계층적 마크다운으로 재구성
 - 나무위키 문체 규칙(아래 참조)에 따라 작성
