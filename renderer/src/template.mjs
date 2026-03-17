@@ -456,7 +456,6 @@ section.footnotes li { margin: 0.3em 0; }
   vertical-align: super;
   line-height: 0;
 }
-.footnote-ref a { color: var(--namu-brand); }
 .footnote-ref a { color: #0275d8; font-size: 12px; font-weight: normal; }
 .footnote-backref { text-decoration: none; margin-left: 0.3em; color: var(--namu-brand); }
 
