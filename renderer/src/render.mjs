@@ -64,8 +64,8 @@ async function main() {
   for (const file of files) {
     let md = file.content;
     // Download images if enabled
-    if (opts.images !== false && (file.sourceUrl || md.match(/!\[.*?\]\(https?:\/\//))) {
-      md = await downloadImages(md, outputDir, file.sourceUrl);
+    if (opts.images !== false) {
+      md = await processImages(md, outputDir, file.sourceUrl, file.sourceDir);
     }
     const headings = extractHeadings(md);
     const title = opts.title || extractTitle(md) || file.name;
@@ -128,7 +128,7 @@ async function collectInputs(inputs) {
     if (isUrl(input)) {
       const content = await fetchUrl(input);
       const name = urlToFilename(input);
-      files.push({ name, content, sourceUrl: input });
+      files.push({ name, content, sourceUrl: input, sourceDir: null });
     } else {
       const p = resolve(input);
       if (!existsSync(p)) {
@@ -141,10 +141,10 @@ async function collectInputs(inputs) {
           .filter((f) => /\.md$/i.test(f))
           .sort();
         for (const f of mdFiles) {
-          files.push({ name: f, content: readFileSync(join(p, f), 'utf8'), sourceUrl: null });
+          files.push({ name: f, content: readFileSync(join(p, f), 'utf8'), sourceUrl: null, sourceDir: p });
         }
       } else {
-        files.push({ name: basename(p), content: readFileSync(p, 'utf8'), sourceUrl: null });
+        files.push({ name: basename(p), content: readFileSync(p, 'utf8'), sourceUrl: null, sourceDir: dirname(p) });
       }
     }
   }
@@ -206,6 +206,22 @@ function htmlToBasicMarkdown(html) {
     return `\n![${altMatch ? altMatch[1] : ''}](${srcMatch[1]})\n`;
   });
 
+  // Handle figure elements
+  text = text.replace(/<figure[^>]*>([\s\S]*?)<\/figure>/gi, (_, content) => {
+    const imgMatch = content.match(/src=["']([^"']+)["']/i);
+    const captionMatch = content.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
+    if (imgMatch) {
+      return `\n![${captionMatch ? captionMatch[1].replace(/<[^>]+>/g, '').trim() : ''}](${imgMatch[1]})\n`;
+    }
+    return '';
+  });
+  // Handle picture elements (use first source or img)
+  text = text.replace(/<picture[^>]*>([\s\S]*?)<\/picture>/gi, (_, content) => {
+    const srcMatch = content.match(/src=["']([^"']+)["']/i) || content.match(/srcset=["']([^\s"']+)/i);
+    if (srcMatch) return `\n![](${srcMatch[1]})\n`;
+    return '';
+  });
+
   // Strip remaining tags
   text = text.replace(/<[^>]+>/g, '');
 
@@ -226,7 +242,7 @@ function htmlToBasicMarkdown(html) {
 // ---------------------------------------------------------------------------
 // Image extraction and download
 // ---------------------------------------------------------------------------
-async function downloadImages(markdown, outputDir, sourceUrl) {
+async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
   const imgDir = join(outputDir, 'images');
   let modified = markdown;
   const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
@@ -235,51 +251,80 @@ async function downloadImages(markdown, outputDir, sourceUrl) {
   if (matches.length === 0) return modified;
 
   mkdirSync(imgDir, { recursive: true });
-  let downloaded = 0;
+  let count = 0;
 
   for (const match of matches) {
     const [full, alt, src] = match;
 
-    // Skip data URIs and local files that already exist
-    if (src.startsWith('data:') || (existsSync(src) && !isUrl(src))) continue;
-
-    // Resolve relative URLs
-    let imgUrl = src;
-    if (!isUrl(src) && sourceUrl) {
-      try {
-        imgUrl = new URL(src, sourceUrl).href;
-      } catch { continue; }
-    }
-
-    if (!isUrl(imgUrl)) continue;
+    // Skip data URIs
+    if (src.startsWith('data:')) continue;
+    // Skip already-processed local images
+    if (src.startsWith('images/')) continue;
 
     try {
-      const imgRes = await fetch(imgUrl, {
-        headers: { 'User-Agent': 'kiwi-paper-renderer/1.0' },
-        signal: AbortSignal.timeout(15000)
-      });
-      if (!imgRes.ok) continue;
-
-      const contentType = imgRes.headers.get('content-type') || '';
-      if (contentType && !contentType.startsWith('image/') && !contentType.includes('svg')) continue;
-      const ext = getImageExt(contentType, imgUrl);
-      const imgName = `img-${String(downloaded + 1).padStart(2, '0')}${ext}`;
-      const imgPath = join(imgDir, imgName);
-
-      const buffer = Buffer.from(await imgRes.arrayBuffer());
-      writeFileSync(imgPath, buffer);
-
-      // Replace URL in markdown with local path
-      modified = modified.split(full).join(`![${alt}](images/${imgName})`);
-      downloaded++;
-      console.log(`  ↓ Image: ${imgName}`);
-    } catch (err) {
-      // Skip failed downloads silently
+      if (isUrl(src)) {
+        // Remote image: download
+        const result = await downloadRemoteImage(src, imgDir, count);
+        if (result) {
+          modified = modified.split(full).join(`![${alt}](images/${result})`);
+          count++;
+          console.log(`  ↓ Image: ${result}`);
+        }
+      } else if (sourceUrl && !isUrl(src)) {
+        // Relative URL from web source: resolve against sourceUrl
+        try {
+          const resolved = new URL(src, sourceUrl).href;
+          const result = await downloadRemoteImage(resolved, imgDir, count);
+          if (result) {
+            modified = modified.split(full).join(`![${alt}](images/${result})`);
+            count++;
+            console.log(`  ↓ Image: ${result}`);
+          }
+        } catch { /* skip */ }
+      } else if (sourceDir) {
+        // Local relative path: copy file to images/
+        const localPath = resolve(sourceDir, src);
+        if (existsSync(localPath)) {
+          const ext = extname(localPath) || '.png';
+          const imgName = `img-${String(count + 1).padStart(2, '0')}${ext}`;
+          const destPath = join(imgDir, imgName);
+          const { copyFileSync } = await import('node:fs');
+          copyFileSync(localPath, destPath);
+          modified = modified.split(full).join(`![${alt}](images/${imgName})`);
+          count++;
+          console.log(`  → Image: ${imgName} (copied from ${basename(localPath)})`);
+        }
+      }
+    } catch {
+      // Skip failed images silently
     }
   }
 
-  if (downloaded > 0) console.log(`  ✓ ${downloaded} image(s) downloaded`);
+  if (count > 0) console.log(`  ✓ ${count} image(s) processed`);
   return modified;
+}
+
+async function downloadRemoteImage(url, imgDir, index) {
+  try {
+    const imgRes = await fetch(url, {
+      headers: { 'User-Agent': 'kiwi-paper-renderer/1.0' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!imgRes.ok) return null;
+
+    const contentType = imgRes.headers.get('content-type') || '';
+    if (contentType && !contentType.startsWith('image/') && !contentType.includes('svg')) return null;
+
+    const ext = getImageExt(contentType, url);
+    const imgName = `img-${String(index + 1).padStart(2, '0')}${ext}`;
+    const imgPath = join(imgDir, imgName);
+
+    const buffer = Buffer.from(await imgRes.arrayBuffer());
+    writeFileSync(imgPath, buffer);
+    return imgName;
+  } catch {
+    return null;
+  }
 }
 
 function getImageExt(contentType, url) {
