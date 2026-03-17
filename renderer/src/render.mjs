@@ -34,6 +34,7 @@ program
   .option('--no-toc', 'Disable table of contents sidebar')
   .option('--single', 'Force single-file mode (no index page)')
   .option('--no-images', 'Disable image downloading')
+  .option('--split', 'Split document into separate pages per h2 section')
   .parse();
 
 const opts = program.opts();
@@ -75,6 +76,35 @@ async function main() {
     rendered.push({ title, html, headings, outName, srcName: file.name });
   }
 
+  // --- Split mode: break each file into h2 sections ---
+  if (opts.split && rendered.length === 1) {
+    const r = rendered[0];
+    const file = files[0];
+    const sections = splitMarkdown(file.content, r.title);
+
+    if (sections.length > 1) {
+      // Re-render each section
+      rendered.length = 0;
+      for (const sec of sections) {
+        let secMd = sec.content;
+        if (opts.images !== false) {
+          secMd = await processImages(secMd, outputDir, file.sourceUrl, file.sourceDir);
+        }
+        const secHeadings = extractHeadings(secMd);
+        const secHtml = await marked.parse(secMd);
+        const outName = sec.slug + '.html';
+        rendered.push({
+          title: sec.title,
+          html: secHtml,
+          headings: secHeadings,
+          outName,
+          srcName: sec.slug + '.md',
+        });
+      }
+      console.log(`  ✂ Split into ${rendered.length} pages`);
+    }
+  }
+
   const isMulti = rendered.length > 1 && !opts.single;
 
   // Write HTML files
@@ -88,6 +118,11 @@ async function main() {
         }
       : {};
 
+    // Build related/sub docs from sibling pages in split mode
+    const siblings = (opts.split && rendered.length > 1)
+      ? rendered.filter((s, j) => j !== i && s.outName !== 'index.html').map(s => ({ title: s.title, href: s.outName }))
+      : [];
+
     const pageHtml = renderPage({
       title: r.title,
       bodyHtml: r.html,
@@ -96,6 +131,7 @@ async function main() {
       katexCss,
       shikiCss,
       showToc: opts.toc !== false,
+      relatedDocs: siblings,
     });
 
     const outPath = join(outputDir, r.outName);
@@ -527,6 +563,60 @@ function loadKatexCss() {
   }
   console.warn('Warning: KaTeX CSS not found, math styling may be missing.');
   return '';
+}
+
+// ---------------------------------------------------------------------------
+// Document splitting by h2 sections
+// ---------------------------------------------------------------------------
+function splitMarkdown(md, baseTitle) {
+  const lines = md.split('\n');
+  const sections = [];
+  let current = { title: baseTitle, slug: 'index', lines: [], level: 0 };
+  let preamble = [];
+  let foundFirstH2 = false;
+
+  for (const line of lines) {
+    const h2Match = line.match(/^## \s*(\d+\.?\s*)?(.+)$/);
+    if (h2Match) {
+      if (!foundFirstH2) {
+        preamble = current.lines;
+        foundFirstH2 = true;
+      } else {
+        sections.push(current);
+      }
+      const sectionTitle = h2Match[2].trim();
+      const slug = sectionTitle
+        .toLowerCase()
+        .replace(/[^\w\s가-힣-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || `section-${sections.length + 1}`;
+      current = { title: sectionTitle, slug, lines: [line], level: 2 };
+    } else {
+      current.lines.push(line);
+    }
+  }
+  if (current.lines.length > 0) sections.push(current);
+
+  // Build section objects with preamble prepended to first or as index
+  const result = [];
+
+  // Index/overview page with preamble + TOC links
+  if (preamble.length > 0 || sections.length > 1) {
+    let indexMd = preamble.join('\n') + '\n\n---\n\n';
+    indexMd += '## 문서 목차\n\n';
+    sections.forEach((s, i) => {
+      indexMd += `${i + 1}. [${s.title}](${s.slug}.html)\n`;
+    });
+    result.push({ title: baseTitle, slug: 'index', content: indexMd });
+  }
+
+  // Individual section pages
+  sections.forEach((s) => {
+    result.push({ title: s.title, slug: s.slug, content: s.lines.join('\n') });
+  });
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
