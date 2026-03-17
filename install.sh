@@ -1,58 +1,76 @@
 #!/bin/bash
 # kiwi-paper multi-platform skill installer
+# Installs everything to ~/.claude/skills/kiwi-paper/ and cleans up
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+INSTALL_DIR="$HOME/.claude/skills/kiwi-paper"
 
 echo "🥝 kiwi-paper installer"
 echo ""
 
-# --- Claude Code ---
-if [ -d "$HOME/.claude" ]; then
-  SKILL_DIR="$HOME/.claude/skills/kiwi-paper"
-  mkdir -p "$SKILL_DIR"
-  cp "$SCRIPT_DIR/SKILL.md" "$SKILL_DIR/SKILL.md"
-  echo "✓ Claude Code: skill installed to $SKILL_DIR"
-else
-  echo "- Claude Code: ~/.claude not found, skipping"
+# --- Create install directory ---
+mkdir -p "$INSTALL_DIR"
+
+# --- Copy all necessary files ---
+cp "$SCRIPT_DIR/SKILL.md" "$INSTALL_DIR/SKILL.md"
+cp "$SCRIPT_DIR/AGENTS.md" "$INSTALL_DIR/AGENTS.md"
+
+# Copy platform-specific instruction files
+for f in OPENCODE.md CODEX.md GEMINI.md; do
+  [ -f "$SCRIPT_DIR/$f" ] && cp "$SCRIPT_DIR/$f" "$INSTALL_DIR/$f"
+done
+
+# Copy renderer
+if [ -d "$SCRIPT_DIR/renderer" ]; then
+  rm -rf "$INSTALL_DIR/renderer"
+  mkdir -p "$INSTALL_DIR/renderer/src"
+  cp "$SCRIPT_DIR/renderer/package.json" "$INSTALL_DIR/renderer/package.json"
+  cp "$SCRIPT_DIR/renderer/package-lock.json" "$INSTALL_DIR/renderer/package-lock.json" 2>/dev/null || true
+  cp "$SCRIPT_DIR/renderer/src/render.mjs" "$INSTALL_DIR/renderer/src/render.mjs"
+  cp "$SCRIPT_DIR/renderer/src/template.mjs" "$INSTALL_DIR/renderer/src/template.mjs"
 fi
 
-# --- OpenCode ---
-if [ -d "$HOME/.opencode" ] || command -v opencode >/dev/null 2>&1; then
-  echo "✓ OpenCode: OPENCODE.md and AGENTS.md available in repo root"
+# Copy examples
+if [ -d "$SCRIPT_DIR/examples" ]; then
+  rm -rf "$INSTALL_DIR/examples"
+  cp -r "$SCRIPT_DIR/examples" "$INSTALL_DIR/examples"
 fi
 
-# --- Codex ---
-if command -v codex >/dev/null 2>&1; then
-  echo "✓ Codex: CODEX.md and AGENTS.md available in repo root"
-fi
+echo "✓ Files installed to $INSTALL_DIR"
 
-# --- Gemini CLI ---
-if command -v gemini >/dev/null 2>&1; then
-  echo "✓ Gemini CLI: GEMINI.md available in repo root"
-fi
-
-# --- Renderer (Node.js) ---
+# --- Install renderer dependencies (Node.js >= 20) ---
 if command -v node >/dev/null 2>&1; then
   NODE_VERSION=$(node -v | sed 's/v//' | cut -d. -f1)
   if [ "$NODE_VERSION" -ge 20 ]; then
-    echo ""
     echo "Installing renderer dependencies..."
-    cd "$SCRIPT_DIR/renderer" && npm install --silent
-    echo "✓ Renderer ready (node $SCRIPT_DIR/renderer/src/render.mjs)"
+    cd "$INSTALL_DIR/renderer" && npm install --silent
+    echo "✓ Renderer ready"
   else
-    echo ""
     echo "⚠ Node.js >= 20 required for HTML renderer (found v$NODE_VERSION). Skipping."
   fi
 else
-  echo ""
   echo "⚠ Node.js not found. HTML renderer will not be available."
   echo "  Install Node.js >= 20 and re-run this script to enable HTML rendering."
 fi
 
+# --- Clean up cloned repo if running from a git clone ---
+# Only clean up if SCRIPT_DIR is NOT already inside the install directory
+# and if it looks like a git clone (has .git/)
+if [ -d "$SCRIPT_DIR/.git" ] && [ "$SCRIPT_DIR" != "$INSTALL_DIR" ]; then
+  REAL_SCRIPT=$(cd "$SCRIPT_DIR" && pwd -P)
+  REAL_INSTALL=$(cd "$INSTALL_DIR" && pwd -P)
+  if [ "$REAL_SCRIPT" != "$REAL_INSTALL" ]; then
+    echo ""
+    echo "Cleaning up cloned repository..."
+    rm -rf "$SCRIPT_DIR"
+    echo "✓ Cloned repo removed"
+  fi
+fi
+
+echo ""
+echo "Installed to: $INSTALL_DIR"
 echo ""
 echo "Usage:"
 echo "  Claude Code:  /kiwi-paper <file|url>"
-echo "  OpenCode:     Read OPENCODE.md → SKILL.md, then follow pipeline"
-echo "  Codex:        Read CODEX.md → SKILL.md, then follow pipeline"
-echo "  Gemini CLI:   Read GEMINI.md → SKILL.md, then follow pipeline"
+echo "  Renderer CLI: node $INSTALL_DIR/renderer/src/render.mjs -i <file> -o <dir>"
