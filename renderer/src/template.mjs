@@ -211,7 +211,7 @@ function getStyles() {
 html { font-size: 15px; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
 body {
-  font-family: 'Pretendard JP Variable', 'Pretendard Variable', Pretendard, -apple-system, system-ui, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Noto Sans Korean', 'Nanum Gothic', sans-serif;
+  font-family: 'Pretendard JP Variable', 'Pretendard JP', 'Pretendard Variable', Pretendard, -apple-system, system-ui, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Noto Sans CJK KR', NanumBarunGothic, Roboto, 'Segoe UI', 'Malgun Gothic', sans-serif;
   font-size: 15px;
   background: var(--bg-page);
   color: var(--text-primary);
