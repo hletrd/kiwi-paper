@@ -42,7 +42,7 @@ kiwi-paper는 그 논문을 나무위키 스타일로 바꿔줍니다. 학술적
 
 ```bash
 # 방법 1: install 스크립트
-git clone https://github.com/your-username/kiwi-paper.git
+git clone https://github.com/hletrd/kiwi-paper.git
 cd kiwi-paper
 ./install.sh
 
