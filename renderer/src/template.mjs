@@ -12,6 +12,8 @@
  * @param {string} [opts.katexCss]
  * @param {string} [opts.shikiCss]
  * @param {boolean} [opts.showToc]
+ * @param {Array<{title: string, href: string}>} [opts.relatedDocs]
+ * @param {Array<{title: string, href: string}>} [opts.subDocs]
  * @returns {string}
  */
 export function renderPage({
@@ -22,9 +24,12 @@ export function renderPage({
   katexCss = '',
   shikiCss = '',
   showToc = true,
+  relatedDocs = [],
+  subDocs = [],
 }) {
   const tocHtml = showToc && headings.length > 0 ? buildToc(headings) : '';
   const navHtml = buildNavigation(navigation);
+  const relatedHtml = buildRelatedDocs(relatedDocs, subDocs);
 
   return `<!DOCTYPE html>
 <html lang="ko" data-theme="light">
@@ -43,14 +48,9 @@ ${shikiCss ? `<style>${shikiCss}</style>` : ''}
   <div class="wiki-header">
     <div class="wiki-header-inner">
       <a class="wiki-logo" href="${navigation.index || '#'}">🥝 kiwi-paper</a>
-      <div class="theme-switcher">
-        <button class="theme-btn" data-theme="light" aria-label="라이트 모드" title="라이트 모드">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        </button>
-        <button class="theme-btn" data-theme="dark" aria-label="다크 모드" title="다크 모드">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        </button>
-      </div>
+      <button class="settings-toggle" aria-label="디스플레이 설정" title="디스플레이 설정">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
     </div>
   </div>
 
@@ -63,6 +63,7 @@ ${shikiCss ? `<style>${shikiCss}</style>` : ''}
       ${tocHtml}
       ${bodyHtml}
     </article>
+    ${relatedHtml}
     ${navHtml}
   </div>
 
@@ -71,12 +72,88 @@ ${shikiCss ? `<style>${shikiCss}</style>` : ''}
   </div>
 </div>
 
+<div class="settings-overlay" aria-hidden="true"></div>
+<div class="settings-panel" aria-hidden="true">
+  <div class="settings-header">
+    <span class="settings-title">디스플레이 설정</span>
+    <button class="settings-close" aria-label="닫기">&times;</button>
+  </div>
+  <div class="settings-body">
+    <div class="settings-group">
+      <div class="settings-group-title">테마</div>
+      <div class="settings-radio-group" data-setting="theme">
+        <label><input type="radio" name="theme" value="auto" checked> 자동 (시스템 설정)</label>
+        <label><input type="radio" name="theme" value="light"> 라이트</label>
+        <label><input type="radio" name="theme" value="dark"> 다크</label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">취소선</div>
+      <div class="settings-toggle-row">
+        <span>보이기</span>
+        <label class="toggle"><input type="checkbox" data-setting="show-del" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">각주 표시 형식</div>
+      <div class="settings-radio-group" data-setting="fn-mode">
+        <label><input type="radio" name="fn-mode" value="popover" checked> 팝오버</label>
+        <label><input type="radio" name="fn-mode" value="inline"> 인라인</label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">이미지</div>
+      <div class="settings-toggle-row">
+        <span>보이기</span>
+        <label class="toggle"><input type="checkbox" data-setting="show-images" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">글자 크기</div>
+      <div class="settings-radio-group" data-setting="font-size">
+        <label><input type="radio" name="font-size" value="default" checked> 기본</label>
+        <label><input type="radio" name="font-size" value="small"> 작게</label>
+        <label><input type="radio" name="font-size" value="large"> 크게</label>
+        <label><input type="radio" name="font-size" value="xlarge"> 매우 크게</label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">문단 접기</div>
+      <div class="settings-toggle-row">
+        <span>문단을 기본으로 접기</span>
+        <label class="toggle"><input type="checkbox" data-setting="fold-sections"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">표</div>
+      <div class="settings-toggle-row">
+        <span>표 워드랩 사용</span>
+        <label class="toggle"><input type="checkbox" data-setting="table-wrap" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">외부 링크</div>
+      <div class="settings-toggle-row">
+        <span>외부 링크 아이콘 표시</span>
+        <label class="toggle"><input type="checkbox" data-setting="ext-link-icon" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">목차</div>
+      <div class="settings-toggle-row">
+        <span>목차 지도 활성화</span>
+        <label class="toggle"><input type="checkbox" data-setting="toc-map" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+  </div>
+</div>
+
 <button class="toc-fab" aria-label="목차" style="display:none">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
 </button>
 <div class="toc-overlay" aria-hidden="true"></div>
 
-<script>${getThemeScript()}</script>
+<script>${getSettingsScript()}</script>
 ${tocHtml ? `<script>${getTocScript()}</script>` : ''}
 </body>
 </html>`;
@@ -141,6 +218,23 @@ function buildNavigation(nav) {
   if (nav.index) parts.push(`<a class="nav-index" href="${escapeHtml(nav.index)}">목록</a>`);
   if (nav.next) parts.push(`<a class="nav-next" href="${escapeHtml(nav.next.href)}">${escapeHtml(nav.next.title)} &rarr;</a>`);
   return `<nav class="page-nav">${parts.join('')}</nav>`;
+}
+
+function buildRelatedDocs(relatedDocs, subDocs) {
+  if ((!relatedDocs || relatedDocs.length === 0) && (!subDocs || subDocs.length === 0)) return '';
+  let html = '<div class="wiki-related">';
+  if (subDocs && subDocs.length > 0) {
+    html += '<div class="related-section"><div class="related-title">하위 문서</div><ul class="related-list">';
+    html += subDocs.map(d => `<li><a href="${escapeHtml(d.href)}">${escapeHtml(d.title)}</a></li>`).join('');
+    html += '</ul></div>';
+  }
+  if (relatedDocs && relatedDocs.length > 0) {
+    html += '<div class="related-section"><div class="related-title">관련 문서</div><ul class="related-list">';
+    html += relatedDocs.map(d => `<li><a href="${escapeHtml(d.href)}">${escapeHtml(d.title)}</a></li>`).join('');
+    html += '</ul></div>';
+  }
+  html += '</div>';
+  return html;
 }
 
 function getStyles() {
@@ -250,22 +344,6 @@ body {
   text-decoration: none;
 }
 .wiki-logo:hover { color: #fff; text-decoration: none; opacity: 0.9; }
-
-/* --- Theme Switcher --- */
-.theme-switcher { display: flex; gap: 4px; }
-.theme-btn {
-  background: rgba(255,255,255,0.15);
-  border: none;
-  padding: 5px 8px;
-  cursor: pointer;
-  border-radius: 4px;
-  color: rgba(255,255,255,0.7);
-  display: flex;
-  align-items: center;
-  transition: all 0.15s;
-}
-.theme-btn:hover { background: rgba(255,255,255,0.25); color: #fff; }
-.theme-btn.active { background: rgba(255,255,255,0.3); color: #fff; }
 
 /* --- Content Header (Title Bar) --- */
 .wiki-content-header {
@@ -549,6 +627,172 @@ img { max-width: 100%; height: auto; }
 }
 .toc-overlay.open { display: block; }
 
+/* --- Settings Panel --- */
+.settings-toggle {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+.settings-toggle:hover { background: rgba(255,255,255,0.25); color: #fff; }
+
+.settings-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1998;
+  background: rgba(0,0,0,0.4);
+}
+.settings-overlay.open { display: block; }
+
+.settings-panel {
+  position: fixed;
+  top: 0;
+  right: -360px;
+  width: 340px;
+  height: 100vh;
+  z-index: 1999;
+  background: var(--bg-content);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 16px rgba(0,0,0,0.15);
+  transition: right 0.25s ease;
+  overflow-y: auto;
+  font-size: 14px;
+}
+.settings-panel.open { right: 0; }
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-header);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.settings-title { font-weight: 700; font-size: 15px; }
+.settings-close {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+.settings-close:hover { color: var(--text-primary); }
+
+.settings-body { padding: 8px 0; }
+
+.settings-group {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-group-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.settings-radio-group label {
+  display: block;
+  padding: 4px 0;
+  cursor: pointer;
+  font-size: 14px;
+}
+.settings-radio-group input { margin-right: 6px; accent-color: var(--namu-brand); }
+
+.settings-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+/* Toggle switch */
+.toggle { position: relative; display: inline-block; width: 40px; height: 22px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--border);
+  border-radius: 22px;
+  transition: 0.2s;
+}
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--namu-brand); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+/* --- Related/Sub Documents --- */
+.wiki-related {
+  margin-top: 2em;
+  padding: 1em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-header);
+}
+.related-section { margin-bottom: 0.8em; }
+.related-section:last-child { margin-bottom: 0; }
+.related-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--namu-brand);
+  margin-bottom: 0.4em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border);
+}
+.related-list { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.4em 1em; }
+.related-list li { font-size: 14px; }
+.related-list a { color: var(--link-color); }
+
+/* --- Body classes for settings --- */
+body.hide-del del { color: transparent; text-decoration: none; background: var(--bg-code); border-radius: 2px; cursor: pointer; }
+body.hide-del del:hover { color: var(--text-del); text-decoration: line-through; }
+body.hide-images .wiki-figure, body.hide-images img:not(.settings-panel img) { display: none; }
+body.no-table-wrap td, body.no-table-wrap th { white-space: nowrap; }
+body.no-ext-icon a[href^="http"]::after { display: none; }
+body.fold-sections .wiki-article > h2 ~ *:not(h2):not(h1):not(.wiki-toc):not(.wiki-related) { display: none; }
+body.fold-sections .wiki-article > h2 { cursor: pointer; }
+body.fold-sections .wiki-article > h2.unfolded ~ *:not(h2):not(h1):not(.wiki-toc):not(.wiki-related) { display: block; }
+body.font-small { font-size: 13px; }
+body.font-large { font-size: 17px; }
+body.font-xlarge { font-size: 19px; }
+
+/* --- Footnote Popover --- */
+.fn-popover {
+  z-index: 2000;
+  max-width: 400px;
+  padding: 10px 14px;
+  background: var(--bg-content);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  pointer-events: none;
+}
+
 /* --- Mobile --- */
 @media (max-width: 768px) {
   .wiki-wrapper { border: none; }
@@ -582,7 +826,7 @@ img { max-width: 100%; height: auto; }
 @media print {
   body { background: #fff; color: #000; }
   .wiki-wrapper { border: none; max-width: 100%; }
-  .wiki-header, .theme-switcher, .toc-fab, .toc-overlay, .page-nav, .wiki-footer { display: none !important; }
+  .wiki-header, .settings-toggle, .settings-panel, .settings-overlay, .toc-fab, .toc-overlay, .page-nav, .wiki-footer { display: none !important; }
   .wiki-content-header { background: none; border: none; }
   .wiki-content { padding: 0; }
   a { color: #000; }
@@ -650,39 +894,125 @@ function getTocScript() {
 `;
 }
 
-function getThemeScript() {
+function getSettingsScript() {
   return `
 (function() {
-  var root = document.documentElement;
-  var buttons = document.querySelectorAll('.theme-btn');
-  var stored = localStorage.getItem('kiwi-paper-theme');
+  var panel = document.querySelector('.settings-panel');
+  var overlay = document.querySelector('.settings-overlay');
+  var toggleBtn = document.querySelector('.settings-toggle');
+  var closeBtn = document.querySelector('.settings-close');
+  if (!panel || !toggleBtn) return;
 
-  // Default to system preference
-  if (!stored) {
-    stored = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  function openPanel() { panel.classList.add('open'); overlay.classList.add('open'); }
+  function closePanel() { panel.classList.remove('open'); overlay.classList.remove('open'); }
+  toggleBtn.addEventListener('click', function() { panel.classList.contains('open') ? closePanel() : openPanel(); });
+  overlay.addEventListener('click', closePanel);
+  if (closeBtn) closeBtn.addEventListener('click', closePanel);
+
+  // --- Settings persistence ---
+  var STORE_KEY = 'kiwi-paper-settings';
+  var defaults = {
+    theme: 'auto',
+    'show-del': true,
+    'fn-mode': 'popover',
+    'show-images': true,
+    'font-size': 'default',
+    'fold-sections': false,
+    'table-wrap': true,
+    'ext-link-icon': true,
+    'toc-map': true
+  };
+
+  function loadSettings() {
+    try { return Object.assign({}, defaults, JSON.parse(localStorage.getItem(STORE_KEY))); }
+    catch(e) { return Object.assign({}, defaults); }
   }
+  function saveSettings(s) { localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
 
-  function setTheme(theme) {
-    root.setAttribute('data-theme', theme);
-    localStorage.setItem('kiwi-paper-theme', theme);
-    buttons.forEach(function(b) {
-      b.classList.toggle('active', b.getAttribute('data-theme') === theme);
-    });
-  }
+  var settings = loadSettings();
 
-  setTheme(stored);
-  buttons.forEach(function(b) {
-    b.addEventListener('click', function() {
-      setTheme(b.getAttribute('data-theme'));
-    });
-  });
-
-  // Listen for system theme changes
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-    if (!localStorage.getItem('kiwi-paper-theme')) {
-      setTheme(e.matches ? 'dark' : 'light');
+  function applyTheme(theme) {
+    if (theme === 'auto') {
+      var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
     }
+  }
+
+  function applyAll() {
+    applyTheme(settings.theme);
+    document.body.classList.toggle('hide-del', !settings['show-del']);
+    document.body.classList.toggle('hide-images', !settings['show-images']);
+    document.body.classList.toggle('no-table-wrap', !settings['table-wrap']);
+    document.body.classList.toggle('no-ext-icon', !settings['ext-link-icon']);
+    document.body.classList.toggle('fold-sections', settings['fold-sections']);
+    document.body.classList.remove('font-small', 'font-large', 'font-xlarge');
+    if (settings['font-size'] !== 'default') document.body.classList.add('font-' + settings['font-size']);
+
+    // Sync UI
+    panel.querySelectorAll('input[type=radio]').forEach(function(r) {
+      var key = r.name;
+      r.checked = (settings[key] === r.value);
+    });
+    panel.querySelectorAll('input[type=checkbox]').forEach(function(c) {
+      var key = c.getAttribute('data-setting');
+      if (key && settings[key] !== undefined) c.checked = settings[key];
+    });
+  }
+
+  // Radio inputs
+  panel.querySelectorAll('input[type=radio]').forEach(function(r) {
+    r.addEventListener('change', function() {
+      settings[r.name] = r.value;
+      saveSettings(settings);
+      applyAll();
+    });
   });
+
+  // Toggle inputs
+  panel.querySelectorAll('input[type=checkbox]').forEach(function(c) {
+    c.addEventListener('change', function() {
+      var key = c.getAttribute('data-setting');
+      if (key) { settings[key] = c.checked; saveSettings(settings); applyAll(); }
+    });
+  });
+
+  // System theme change listener
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+    if (settings.theme === 'auto') applyTheme('auto');
+  });
+
+  // Footnote popover
+  document.querySelectorAll('.footnote-ref a').forEach(function(a) {
+    a.addEventListener('mouseenter', function(e) {
+      if (settings['fn-mode'] !== 'popover') return;
+      var id = a.getAttribute('href')?.replace('#', '');
+      var fn = document.getElementById(id);
+      if (!fn) return;
+      var existing = document.querySelector('.fn-popover');
+      if (existing) existing.remove();
+      var pop = document.createElement('div');
+      pop.className = 'fn-popover';
+      pop.innerHTML = fn.innerHTML;
+      pop.style.position = 'absolute';
+      pop.style.left = e.pageX + 'px';
+      pop.style.top = (e.pageY + 20) + 'px';
+      document.body.appendChild(pop);
+      a.addEventListener('mouseleave', function() { pop.remove(); }, { once: true });
+    });
+  });
+
+  // Section folding click handler
+  document.querySelectorAll('.wiki-article > h2').forEach(function(h) {
+    h.addEventListener('click', function() {
+      if (document.body.classList.contains('fold-sections')) {
+        h.classList.toggle('unfolded');
+      }
+    });
+  });
+
+  applyAll();
 })();
 `;
 }
