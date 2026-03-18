@@ -512,6 +512,7 @@ function extractHeadings(md) {
     const match = line.match(/^(#{1,6})\s+(.+)$/);
     if (match) {
       const level = match[1].length;
+      if (level === 1) continue; // Skip h1 (document title — shown separately)
       const raw = match[2].trim();
       // Strip inline markdown for plain text
       const text = raw
