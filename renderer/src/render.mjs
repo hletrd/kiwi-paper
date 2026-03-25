@@ -7,8 +7,8 @@
  *   node render.mjs -i <path|url> -o <dir> [--title <str>] [--no-toc] [--single]
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
-import { resolve, basename, dirname, extname, join, relative } from 'node:path';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, copyFileSync } from 'node:fs';
+import { resolve, basename, dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { program } from 'commander';
 import { Marked } from 'marked';
@@ -68,9 +68,9 @@ async function main() {
     if (opts.images !== false) {
       md = await processImages(md, outputDir, file.sourceUrl, file.sourceDir);
     }
-    const headings = extractHeadings(md);
     const title = opts.title || extractTitle(md) || file.name;
     const html = await marked.parse(md);
+    const headings = extractHeadings(html);
     const outName = file.name.replace(/\.md$/i, '.html');
 
     rendered.push({ title, html, headings, outName, srcName: file.name });
@@ -90,8 +90,8 @@ async function main() {
         if (opts.images !== false) {
           secMd = await processImages(secMd, outputDir, file.sourceUrl, file.sourceDir);
         }
-        const secHeadings = extractHeadings(secMd);
         const secHtml = await marked.parse(secMd);
+        const secHeadings = extractHeadings(secHtml);
         const outName = sec.slug + '.html';
         rendered.push({
           title: sec.title,
@@ -171,7 +171,7 @@ async function collectInputs(inputs) {
         console.error(`Warning: ${input} not found, skipping.`);
         continue;
       }
-      const stat = (await import('node:fs')).statSync(p);
+      const stat = statSync(p);
       if (stat.isDirectory()) {
         const mdFiles = readdirSync(p)
           .filter((f) => /\.md$/i.test(f))
@@ -324,7 +324,6 @@ async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
           const ext = extname(localPath) || '.png';
           const imgName = `img-${String(count + 1).padStart(2, '0')}${ext}`;
           const destPath = join(imgDir, imgName);
-          const { copyFileSync } = await import('node:fs');
           copyFileSync(localPath, destPath);
           modified = modified.split(full).join(`![${alt}](images/${imgName})`);
           count++;
@@ -443,8 +442,9 @@ async function initMarked() {
       link({ href, title, tokens }) {
         const text = this.parser.parseInline(tokens);
         const resolvedHref = href && href.endsWith('.md') ? href.replace(/\.md$/, '.html') : href;
-        const titleAttr = title ? ` title="${title}"` : '';
-        return `<a href="${resolvedHref}"${titleAttr}>${text}</a>`;
+        const safeHref = resolvedHref ? escHtml(resolvedHref) : '';
+        const titleAttr = title ? ` title="${escHtml(title)}"` : '';
+        return `<a href="${safeHref}"${titleAttr}>${text}</a>`;
       },
       table({ header, rows }) {
         // Use default table rendering but wrapped for scroll
@@ -470,10 +470,11 @@ async function initMarked() {
         return `<div style="overflow-x:auto"><table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
       },
       image({ href, title, text }) {
-        const titleAttr = title ? ` title="${title}"` : '';
-        const altText = text || '';
-        const caption = altText ? `<figcaption>${altText}</figcaption>` : '';
-        return `<figure class="wiki-figure"><img src="${href}" alt="${altText}"${titleAttr} loading="lazy">${caption}</figure>`;
+        const safeHref = href ? escHtml(href) : '';
+        const altText = text ? escHtml(text) : '';
+        const titleAttr = title ? ` title="${escHtml(title)}"` : '';
+        const caption = text ? `<figcaption>${escHtml(text)}</figcaption>` : '';
+        return `<figure class="wiki-figure"><img src="${safeHref}" alt="${altText}"${titleAttr} loading="lazy">${caption}</figure>`;
       },
     },
   });
@@ -499,39 +500,32 @@ function resolveLanguage(highlighter, lang) {
 }
 
 // ---------------------------------------------------------------------------
-// Heading extraction
+// Heading extraction (from rendered HTML — guarantees IDs match gfmHeadingId)
 // ---------------------------------------------------------------------------
-function extractHeadings(md) {
+function extractHeadings(html) {
   const headings = [];
-  const lines = md.split('\n');
-
-  for (const line of lines) {
-    // Skip code blocks
-    if (line.trim().startsWith('```')) continue;
-
-    const match = line.match(/^(#{1,6})\s+(.+)$/);
-    if (match) {
-      const level = match[1].length;
-      if (level === 1) continue; // Skip h1 (document title — shown separately)
-      const raw = match[2].trim();
-      // Strip inline markdown for plain text
-      const text = raw
-        .replace(/\*\*(.+?)\*\*/g, '$1')
-        .replace(/\*(.+?)\*/g, '$1')
-        .replace(/~~(.+?)~~/g, '$1')
-        .replace(/`(.+?)`/g, '$1')
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-      const id = text
-        .toLowerCase()
-        .replace(/[^\w\s가-힣-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-      headings.push({ id, text, level });
-    }
+  const regex = /<h([2-6])\s[^>]*?\bid="([^"]*)"[^>]*>([\s\S]*?)<\/h\1>/gi;
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    const level = parseInt(match[1]);
+    const id = match[2];
+    if (id === 'footnote-label') continue; // Skip auto-generated footnotes heading
+    const text = match[3].replace(/<[^>]+>/g, '').trim();
+    headings.push({ id, text, level });
   }
-
   return headings;
+}
+
+// ---------------------------------------------------------------------------
+// HTML escaping for safe attribute/content interpolation
+// ---------------------------------------------------------------------------
+function escHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function extractTitle(md) {
@@ -575,9 +569,11 @@ function splitMarkdown(md, baseTitle) {
   let current = { title: baseTitle, slug: 'index', lines: [], level: 0 };
   let preamble = [];
   let foundFirstH2 = false;
+  let inCodeBlock = false;
 
   for (const line of lines) {
-    const h2Match = line.match(/^## \s*(\d+\.?\s*)?(.+)$/);
+    if (line.trim().startsWith('```')) inCodeBlock = !inCodeBlock;
+    const h2Match = !inCodeBlock && line.match(/^## \s*(\d+\.?\s*)?(.+)$/);
     if (h2Match) {
       if (!foundFirstH2) {
         preamble = current.lines;
