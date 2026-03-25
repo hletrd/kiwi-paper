@@ -112,8 +112,8 @@ else
   echo "⚠ Node.js not found. HTML renderer will not be available."
 fi
 
-# --- 7. Clean up cloned repo ---
-if [ -d "$SCRIPT_DIR/.git" ] && [ "$SCRIPT_DIR" != "$CLAUDE_DIR" ]; then
+# --- 7. Clean up cloned repo (only with --cleanup flag) ---
+if [ "${1:-}" = "--cleanup" ] && [ -d "$SCRIPT_DIR/.git" ] && [ "$SCRIPT_DIR" != "$CLAUDE_DIR" ]; then
   REAL_SCRIPT=$(cd "$SCRIPT_DIR" && pwd -P)
   REAL_INSTALL=$(cd "$CLAUDE_DIR" && pwd -P)
   if [ "$REAL_SCRIPT" != "$REAL_INSTALL" ]; then
