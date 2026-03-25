@@ -436,7 +436,7 @@ mark { background: #fef08a; padding: 0.1em 0.2em; border-radius: 2px; }
 
 hr {
   border: none;
-  border-top: 1px solid #cccccc;
+  border-top: 1px solid var(--border);
   margin: 7.5px 0;
   height: 0;
 }
@@ -463,7 +463,7 @@ code {
   font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 15px;
   background: var(--bg-code);
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   padding: 0.12em 0.35em;
   border-radius: var(--radius);
 }
@@ -487,8 +487,8 @@ pre code {
 /* Shiki dual theme */
 .shiki-light { display: block; }
 .shiki-dark { display: none; }
-[data-theme="dark"] .shiki-light { display: none; }
-[data-theme="dark"] .shiki-dark { display: block; }
+[data-theme="dark"] .shiki-light, [data-theme="black"] .shiki-light { display: none; }
+[data-theme="dark"] .shiki-dark, [data-theme="black"] .shiki-dark { display: block; }
 pre.shiki { border: 1px solid var(--border); border-radius: var(--radius); }
 
 /* --- Tables (namu.wiki: tight cells, thin borders) --- */
@@ -500,15 +500,13 @@ table {
 }
 th, td {
   padding: 5px 10px;
-  border: 1px solid #dddddd;
+  border: 1px solid var(--border);
   text-align: left;
 }
 th {
   background: var(--bg-table-header);
   font-weight: 600;
 }
-[data-theme="dark"] th,
-[data-theme="dark"] td { border-color: var(--border); }
 
 /* Responsive table wrapper */
 div:has(> table) { overflow-x: auto; }
@@ -561,7 +559,7 @@ section.footnotes li { margin: 0.3em 0; }
   vertical-align: super;
   line-height: 0;
 }
-.footnote-ref a { color: #0275d8; font-size: 12px; font-weight: normal; }
+.footnote-ref a { color: var(--link-color); font-size: 12px; font-weight: normal; }
 .footnote-backref { text-decoration: none; margin-left: 0.3em; color: var(--namu-brand); }
 
 /* --- KaTeX --- */
@@ -798,9 +796,10 @@ body.hide-del del:hover { color: var(--text-del); text-decoration: line-through;
 body.hide-images .wiki-figure, body.hide-images img:not(.settings-panel img) { display: none; }
 body.no-table-wrap td, body.no-table-wrap th { white-space: nowrap; }
 body.no-ext-icon a[href^="http"]::after { display: none; }
-body.fold-sections .wiki-article > h2 ~ *:not(h2):not(h1):not(.wiki-toc):not(.wiki-related) { display: none; }
+body.no-toc-map .toc-entry.active > a { font-weight: inherit; color: var(--link-color); }
 body.fold-sections .wiki-article > h2 { cursor: pointer; }
-body.fold-sections .wiki-article > h2.unfolded ~ *:not(h2):not(h1):not(.wiki-toc):not(.wiki-related) { display: block; }
+body.fold-sections .wiki-article > h2::after { content: " ▶"; font-size: 0.6em; color: var(--text-muted); vertical-align: middle; }
+body.fold-sections .wiki-article > h2.unfolded::after { content: " ▼"; }
 body.font-small { font-size: 13px; }
 body.font-large { font-size: 17px; }
 body.font-xlarge { font-size: 19px; }
@@ -873,6 +872,8 @@ body.fn-inline .footnote-ref::after {
   body { background: #fff; color: #000; }
   .wiki-wrapper { border: none; max-width: 100%; }
   .wiki-header, .settings-toggle, .settings-panel, .settings-overlay, .toc-fab, .toc-overlay, .page-nav, .wiki-footer { display: none !important; }
+  .wiki-article > * { display: block !important; }
+  .wiki-article > h2::after { display: none; }
   .wiki-content-header { background: none; border: none; }
   .wiki-content { padding: 0; }
   a { color: #000; }
@@ -994,6 +995,8 @@ function getSettingsScript() {
     document.body.classList.toggle('no-ext-icon', !settings['ext-link-icon']);
     document.body.classList.toggle('fold-sections', settings['fold-sections']);
     document.body.classList.toggle('fn-inline', settings['fn-mode'] === 'inline');
+    document.body.classList.toggle('no-toc-map', !settings['toc-map']);
+    updateFolding();
     document.body.classList.remove('font-small', 'font-large', 'font-xlarge');
     if (settings['font-size'] !== 'default') document.body.classList.add('font-' + settings['font-size']);
 
@@ -1062,11 +1065,28 @@ function getSettingsScript() {
     });
   });
 
-  // Section folding click handler
+  // Section folding — JS-based per-section visibility
+  function updateFolding() {
+    var article = document.querySelector('.wiki-article');
+    if (!article) return;
+    var isFolded = settings['fold-sections'];
+    var h2s = article.querySelectorAll(':scope > h2');
+    h2s.forEach(function(h2) {
+      var next = h2.nextElementSibling;
+      while (next && next.tagName !== 'H2' && next.tagName !== 'H1') {
+        if (!next.classList.contains('wiki-toc') && !next.classList.contains('wiki-related') && !next.classList.contains('page-nav')) {
+          next.style.display = (!isFolded || h2.classList.contains('unfolded')) ? '' : 'none';
+        }
+        next = next.nextElementSibling;
+      }
+    });
+  }
+
   document.querySelectorAll('.wiki-article > h2').forEach(function(h) {
     h.addEventListener('click', function() {
-      if (document.body.classList.contains('fold-sections')) {
+      if (settings['fold-sections']) {
         h.classList.toggle('unfolded');
+        updateFolding();
       }
     });
   });
