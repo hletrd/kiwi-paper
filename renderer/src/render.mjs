@@ -7,7 +7,7 @@
  *   node render.mjs -i <path|url> -o <dir> [--title <str>] [--no-toc] [--single]
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, copyFileSync, realpathSync } from 'node:fs';
 import { resolve, basename, dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { program } from 'commander';
@@ -224,14 +224,15 @@ function isSafeUrl(urlStr) {
   return true;
 }
 
-async function fetchUrl(url) {
+async function fetchUrl(url, maxRedirects = 5) {
   if (!isSafeUrl(url)) throw new Error(`Blocked unsafe URL: ${url}`);
+  if (maxRedirects <= 0) throw new Error(`Too many redirects fetching ${url}`);
   console.log(`  ↓ Fetching ${url} ...`);
   const res = await fetch(url, { signal: AbortSignal.timeout(30000), redirect: 'manual' });
   if (res.status >= 300 && res.status < 400) {
     const location = res.headers.get('location') || '';
     if (!location || !isSafeUrl(location)) throw new Error(`Blocked unsafe redirect from ${url}`);
-    return fetchUrl(location);
+    return fetchUrl(location, maxRedirects - 1);
   }
   if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
   const contentType = res.headers.get('content-type') || '';
@@ -358,12 +359,13 @@ async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
       } else if (sourceDir) {
         // Local relative path: copy file to images/
         const localPath = resolve(sourceDir, src);
-        const realSource = resolve(sourceDir);
-        if (!localPath.startsWith(realSource + '/') && localPath !== realSource) {
-          console.warn(`  Warning: path traversal blocked: ${src}`);
-          continue;
-        }
         if (existsSync(localPath)) {
+          const realPath = realpathSync(localPath);
+          const realSource = realpathSync(sourceDir);
+          if (!realPath.startsWith(realSource + '/') && realPath !== realSource) {
+            console.warn(`  Warning: path traversal blocked: ${src}`);
+            continue;
+          }
           const ext = extname(localPath) || '.png';
           const imgName = `img-${String(count + 1).padStart(2, '0')}${ext}`;
           const destPath = join(imgDir, imgName);
@@ -382,9 +384,13 @@ async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
   return modified;
 }
 
-async function downloadRemoteImage(url, imgDir, index) {
+async function downloadRemoteImage(url, imgDir, index, maxRedirects = 5) {
   if (!isSafeUrl(url)) {
     console.warn(`  Warning: blocked unsafe image URL: ${url}`);
+    return null;
+  }
+  if (maxRedirects <= 0) {
+    console.warn(`  Warning: too many redirects for image: ${url}`);
     return null;
   }
   try {
@@ -400,7 +406,7 @@ async function downloadRemoteImage(url, imgDir, index) {
         console.warn(`  Warning: blocked unsafe image redirect from ${url}`);
         return null;
       }
-      return downloadRemoteImage(location, imgDir, index);
+      return downloadRemoteImage(location, imgDir, index, maxRedirects - 1);
     }
 
     if (!imgRes.ok) return null;
@@ -409,7 +415,7 @@ async function downloadRemoteImage(url, imgDir, index) {
     if (contentType && !contentType.startsWith('image/')) return null;
 
     // Block SVG downloads entirely (can contain scripts)
-    if (contentType.includes('svg')) {
+    if (contentType.includes('svg') || /\.svg(\?|$)/i.test(url)) {
       console.warn(`  Warning: SVG download blocked for security: ${url}`);
       return null;
     }
@@ -606,8 +612,15 @@ function sanitizeHtml(html) {
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<form[\s\S]*?<\/form>/gi, '')
     .replace(/<svg[\s\S]*?<\/svg>/gi, '')
-    .replace(/<(script|iframe|object|embed|style|form|svg|link|meta|base)[^>]*\/?>/gi, '')
-    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '');
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, '')
+    .replace(/<(script|iframe|object|embed|style|form|svg|link|meta|base|noscript|template)[^>]*\/?>/gi, '')
+    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+    // Strip javascript:/vbscript:/data: from href, src, action, formaction attributes
+    .replace(/\b(href|src|action|formaction)\s*=\s*"[^"]*?\b(javascript|vbscript)\s*:[^"]*"/gi, '')
+    .replace(/\b(href|src|action|formaction)\s*=\s*'[^']*?\b(javascript|vbscript)\s*:[^']*'/gi, '')
+    .replace(/\b(href|src|action|formaction)\s*=\s*(?:javascript|vbscript)\s*:[^\s>]*/gi, '')
+    // Strip style attributes from raw HTML
+    .replace(/\bstyle\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '');
 }
 
 // ---------------------------------------------------------------------------
@@ -617,7 +630,7 @@ function isSafeHref(href) {
   if (!href) return '';
   const trimmed = href.trim().toLowerCase();
   if (trimmed.startsWith('javascript:') || trimmed.startsWith('vbscript:') ||
-      trimmed.startsWith('data:text/html') || trimmed.startsWith('file:')) {
+      trimmed.startsWith('data:') || trimmed.startsWith('blob:') || trimmed.startsWith('file:')) {
     return '';
   }
   return href;
