@@ -162,7 +162,7 @@ node src/render.mjs -i https://example.com/doc.md -o ../dist
 | [Claude Code](https://claude.com/claude-code) | `/kiwi-paper` | `~/.claude/skills/kiwi-paper/` |
 | [OpenCode](https://opencode.ai) | `/kiwi-paper` | `~/.config/opencode/skills/kiwi-paper/` |
 | [Codex CLI](https://github.com/openai/codex) | `$kiwi-paper` | `~/.agents/skills/kiwi-paper/` |
-| Codex App | `$kiwi-paper` | Codex CLI과 동일 |
+| Codex App | `$kiwi-paper` | Codex CLI와 동일 |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `/kiwi-paper` | `~/.gemini/commands/kiwi-paper.toml` |
 | [Cursor](https://cursor.com) | 프롬프트로 요청 | `.cursor/rules/kiwi-paper.mdc` |
 | [Antigravity](https://antigravity.google) | 프롬프트로 요청 | Cursor와 동일 |
