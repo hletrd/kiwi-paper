@@ -19,8 +19,19 @@ import { gfmHeadingId } from 'marked-gfm-heading-id';
 import { createHighlighter } from 'shiki';
 import { renderPage, renderIndexPage } from './template.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const MAX_IMG_SIZE = 50 * 1024 * 1024;
+
+const LANG_ALIASES = {
+  sh: 'shell', zsh: 'shell', console: 'shell',
+  js: 'javascript', ts: 'typescript',
+  py: 'python', rb: 'ruby',
+  yml: 'yaml',
+  tex: 'latex',
+  md: 'markdown',
+  txt: 'text', '': 'text',
+};
 
 // ---------------------------------------------------------------------------
 // CLI
@@ -55,7 +66,7 @@ async function main() {
   }
 
   // Initialize rendering pipeline
-  const { marked, shikiCss } = await initMarked();
+  const { marked } = await initMarked();
 
   // Read KaTeX CSS
   const katexCss = loadKatexCss();
@@ -63,46 +74,39 @@ async function main() {
   // Render each file
   const rendered = [];
   for (const file of files) {
-    let md = file.content;
-    // Download images if enabled
+    // Process images once on the full content
+    let processedMd = file.content;
     if (opts.images !== false) {
-      md = await processImages(md, outputDir, file.sourceUrl, file.sourceDir);
+      processedMd = await processImages(processedMd, outputDir, file.sourceUrl, file.sourceDir);
     }
-    const title = opts.title || extractTitle(md) || file.name;
-    const html = sanitizeHtml(await marked.parse(md));
+    const title = opts.title || extractTitle(processedMd) || file.name;
+
+    // --- Split mode: break this file into h2 sections ---
+    if (opts.split && files.length === 1) {
+      const sections = splitMarkdown(processedMd, title);
+
+      if (sections.length > 1) {
+        for (const sec of sections) {
+          const secHtml = sanitizeHtml(await marked.parse(sec.content));
+          const secHeadings = extractHeadings(secHtml);
+          const outName = sec.slug + '.html';
+          rendered.push({
+            title: sec.title,
+            html: secHtml,
+            headings: secHeadings,
+            outName,
+            srcName: sec.slug + '.md',
+          });
+        }
+        console.log(`  ✂ Split into ${rendered.length} pages`);
+        continue;
+      }
+    }
+
+    const html = sanitizeHtml(await marked.parse(processedMd));
     const headings = extractHeadings(html);
     const outName = file.name.replace(/\.md$/i, '.html');
-
     rendered.push({ title, html, headings, outName, srcName: file.name });
-  }
-
-  // --- Split mode: break each file into h2 sections ---
-  if (opts.split && rendered.length === 1) {
-    const r = rendered[0];
-    const file = files[0];
-    const sections = splitMarkdown(file.content, r.title);
-
-    if (sections.length > 1) {
-      // Re-render each section
-      rendered.length = 0;
-      for (const sec of sections) {
-        let secMd = sec.content;
-        if (opts.images !== false) {
-          secMd = await processImages(secMd, outputDir, file.sourceUrl, file.sourceDir);
-        }
-        const secHtml = sanitizeHtml(await marked.parse(secMd));
-        const secHeadings = extractHeadings(secHtml);
-        const outName = sec.slug + '.html';
-        rendered.push({
-          title: sec.title,
-          html: secHtml,
-          headings: secHeadings,
-          outName,
-          srcName: sec.slug + '.md',
-        });
-      }
-      console.log(`  ✂ Split into ${rendered.length} pages`);
-    }
   }
 
   const isMulti = rendered.length > 1 && !opts.single;
@@ -129,7 +133,6 @@ async function main() {
       headings: r.headings,
       navigation,
       katexCss,
-      shikiCss,
       showToc: opts.toc !== false,
       relatedDocs: siblings,
     });
@@ -145,7 +148,6 @@ async function main() {
       title: opts.title || 'kiwi-paper',
       documents: rendered.map((r) => ({ href: r.outName, title: r.title })),
       katexCss,
-      shikiCss,
     });
     writeFileSync(join(outputDir, 'index.html'), indexHtml, 'utf8');
     console.log('  ✓ index.html');
@@ -337,6 +339,7 @@ async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
 
   mkdirSync(imgDir, { recursive: true });
   let count = 0;
+  const replacements = [];
 
   for (const match of matches) {
     const [full, alt, src] = match;
@@ -351,7 +354,7 @@ async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
         // Remote image: download
         const result = await downloadRemoteImage(src, imgDir, count);
         if (result) {
-          modified = modified.split(full).join(`![${alt}](images/${result})`);
+          replacements.push({ from: full, to: `![${alt}](images/${result})` });
           count++;
           console.log(`  ↓ Image: ${result}`);
         }
@@ -361,7 +364,7 @@ async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
           const resolved = new URL(src, sourceUrl).href;
           const result = await downloadRemoteImage(resolved, imgDir, count);
           if (result) {
-            modified = modified.split(full).join(`![${alt}](images/${result})`);
+            replacements.push({ from: full, to: `![${alt}](images/${result})` });
             count++;
             console.log(`  ↓ Image: ${result}`);
           }
@@ -380,13 +383,21 @@ async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
           const imgName = `img-${String(count + 1).padStart(2, '0')}${ext}`;
           const destPath = join(imgDir, imgName);
           copyFileSync(localPath, destPath);
-          modified = modified.split(full).join(`![${alt}](images/${imgName})`);
+          replacements.push({ from: full, to: `![${alt}](images/${imgName})` });
           count++;
           console.log(`  → Image: ${imgName} (copied from ${basename(localPath)})`);
         }
       }
     } catch (e) {
       console.warn('  Warning: image processing failed:', e.message);
+    }
+  }
+
+  // Apply replacements in reverse order to preserve correct indices
+  for (const { from, to } of replacements.reverse()) {
+    const idx = modified.indexOf(from);
+    if (idx !== -1) {
+      modified = modified.slice(0, idx) + to + modified.slice(idx + from.length);
     }
   }
 
@@ -435,7 +446,6 @@ async function downloadRemoteImage(url, imgDir, index, maxRedirects = 5) {
     const imgPath = join(imgDir, imgName);
 
     // Stream with hard 50MB limit
-    const MAX_IMG_SIZE = 50 * 1024 * 1024;
     const chunks = [];
     let totalSize = 0;
     for await (const chunk of imgRes.body) {
@@ -494,7 +504,7 @@ async function initMarked() {
     ],
   });
 
-  let shikiCss = '';
+  const loadedLangs = new Set(highlighter.getLoadedLanguages());
 
   const marked = new Marked();
 
@@ -517,12 +527,12 @@ async function initMarked() {
     markedHighlight({
       async: true,
       highlight(code, lang) {
-        const language = resolveLanguage(highlighter, lang);
+        const language = resolveLanguage(loadedLangs, lang);
         try {
-          const lightHtml = highlighter.codeToHtml(code, { lang: language, theme: 'github-light' });
-          const darkHtml = highlighter.codeToHtml(code, { lang: language, theme: 'tokyo-night' });
-          // Wrap in theme-switchable containers
-          return `<div class="shiki-light">${lightHtml}</div><div class="shiki-dark">${darkHtml}</div>`;
+          return highlighter.codeToHtml(code, {
+            lang: language,
+            themes: { light: 'github-light', dark: 'tokyo-night' },
+          });
         } catch {
           return code;
         }
@@ -573,24 +583,14 @@ async function initMarked() {
     },
   });
 
-  return { marked, shikiCss };
+  return { marked };
 }
 
-function resolveLanguage(highlighter, lang) {
+function resolveLanguage(loadedLangs, lang) {
   if (!lang) return 'text';
   const l = lang.toLowerCase().trim();
-  const aliases = {
-    sh: 'shell', zsh: 'shell', console: 'shell',
-    js: 'javascript', ts: 'typescript',
-    py: 'python', rb: 'ruby',
-    yml: 'yaml',
-    tex: 'latex',
-    md: 'markdown',
-    txt: 'text', '': 'text',
-  };
-  const resolved = aliases[l] || l;
-  const loaded = highlighter.getLoadedLanguages();
-  return loaded.includes(resolved) ? resolved : 'text';
+  const resolved = LANG_ALIASES[l] || l;
+  return loadedLangs.has(resolved) ? resolved : 'text';
 }
 
 // ---------------------------------------------------------------------------
@@ -715,9 +715,17 @@ function splitMarkdown(md, baseTitle) {
   let preamble = [];
   let foundFirstH2 = false;
   let inCodeBlock = false;
+  let fenceType = '';
 
   for (const line of lines) {
-    if (line.trim().startsWith('```') || line.trim().startsWith('~~~')) inCodeBlock = !inCodeBlock;
+    const fenceMatch = !inCodeBlock && line.trim().match(/^(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      fenceType = fenceMatch[1][0];
+      inCodeBlock = true;
+    } else if (inCodeBlock && line.trim().startsWith(fenceType.repeat(3))) {
+      inCodeBlock = false;
+      fenceType = '';
+    }
     const h2Match = !inCodeBlock && line.match(/^## \s*(\d+\.?\s*)?(.+)$/);
     if (h2Match) {
       if (!foundFirstH2) {
