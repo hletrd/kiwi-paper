@@ -69,7 +69,7 @@ async function main() {
       md = await processImages(md, outputDir, file.sourceUrl, file.sourceDir);
     }
     const title = opts.title || extractTitle(md) || file.name;
-    const html = await marked.parse(md);
+    const html = sanitizeHtml(await marked.parse(md));
     const headings = extractHeadings(html);
     const outName = file.name.replace(/\.md$/i, '.html');
 
@@ -90,7 +90,7 @@ async function main() {
         if (opts.images !== false) {
           secMd = await processImages(secMd, outputDir, file.sourceUrl, file.sourceDir);
         }
-        const secHtml = await marked.parse(secMd);
+        const secHtml = sanitizeHtml(await marked.parse(secMd));
         const secHeadings = extractHeadings(secHtml);
         const outName = sec.slug + '.html';
         rendered.push({
@@ -192,7 +192,29 @@ function isUrl(s) {
   return /^https?:\/\//i.test(s);
 }
 
+function isSafeUrl(urlStr) {
+  let parsed;
+  try {
+    parsed = new URL(urlStr);
+  } catch {
+    return false;
+  }
+  // Only allow http and https
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+  const host = parsed.hostname.toLowerCase();
+  // Block localhost and loopback
+  if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host === '::1') return false;
+  // Block link-local
+  if (/^169\.254\./.test(host)) return false;
+  // Block private IPv4 ranges
+  if (/^10\./.test(host)) return false;
+  if (/^192\.168\./.test(host)) return false;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+  return true;
+}
+
 async function fetchUrl(url) {
+  if (!isSafeUrl(url)) throw new Error(`Blocked unsafe URL: ${url}`);
   console.log(`  ↓ Fetching ${url} ...`);
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
@@ -316,7 +338,7 @@ async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
             count++;
             console.log(`  ↓ Image: ${result}`);
           }
-        } catch { /* skip */ }
+        } catch (e) { console.warn('  Warning: image processing failed:', e.message); }
       } else if (sourceDir) {
         // Local relative path: copy file to images/
         const localPath = resolve(sourceDir, src);
@@ -330,8 +352,8 @@ async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
           console.log(`  → Image: ${imgName} (copied from ${basename(localPath)})`);
         }
       }
-    } catch {
-      // Skip failed images silently
+    } catch (e) {
+      console.warn('  Warning: image processing failed:', e.message);
     }
   }
 
@@ -340,6 +362,10 @@ async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
 }
 
 async function downloadRemoteImage(url, imgDir, index) {
+  if (!isSafeUrl(url)) {
+    console.warn(`  Warning: blocked unsafe image URL: ${url}`);
+    return null;
+  }
   try {
     const imgRes = await fetch(url, {
       headers: { 'User-Agent': 'kiwi-paper-renderer/1.0' },
@@ -350,6 +376,13 @@ async function downloadRemoteImage(url, imgDir, index) {
     const contentType = imgRes.headers.get('content-type') || '';
     if (contentType && !contentType.startsWith('image/') && !contentType.includes('svg')) return null;
 
+    // Skip images larger than 50MB to avoid memory exhaustion
+    const contentLength = parseInt(imgRes.headers.get('content-length') || '0', 10);
+    if (contentLength > 50 * 1024 * 1024) {
+      console.warn(`  Warning: image too large (${contentLength} bytes), skipping: ${url}`);
+      return null;
+    }
+
     const ext = getImageExt(contentType, url);
     const imgName = `img-${String(index + 1).padStart(2, '0')}${ext}`;
     const imgPath = join(imgDir, imgName);
@@ -357,7 +390,8 @@ async function downloadRemoteImage(url, imgDir, index) {
     const buffer = Buffer.from(await imgRes.arrayBuffer());
     writeFileSync(imgPath, buffer);
     return imgName;
-  } catch {
+  } catch (e) {
+    console.warn('  Warning: image processing failed:', e.message);
     return null;
   }
 }
@@ -517,6 +551,23 @@ function extractHeadings(html) {
 }
 
 // ---------------------------------------------------------------------------
+// HTML sanitization — strip dangerous tags and event handler attributes
+// ---------------------------------------------------------------------------
+function sanitizeHtml(html) {
+  return html
+    // Remove script tags and their content
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    // Remove iframe, object, embed tags and their content
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+    .replace(/<object[\s\S]*?<\/object>/gi, '')
+    .replace(/<embed[\s\S]*?<\/embed>/gi, '')
+    // Remove standalone self-closing embed/iframe/object tags
+    .replace(/<(iframe|object|embed)[^>]*\/?>/gi, '')
+    // Strip event handler attributes (onclick=, onload=, etc.)
+    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '');
+}
+
+// ---------------------------------------------------------------------------
 // HTML escaping for safe attribute/content interpolation
 // ---------------------------------------------------------------------------
 function escHtml(str) {
@@ -572,7 +623,7 @@ function splitMarkdown(md, baseTitle) {
   let inCodeBlock = false;
 
   for (const line of lines) {
-    if (line.trim().startsWith('```')) inCodeBlock = !inCodeBlock;
+    if (line.trim().startsWith('```') || line.trim().startsWith('~~~')) inCodeBlock = !inCodeBlock;
     const h2Match = !inCodeBlock && line.match(/^## \s*(\d+\.?\s*)?(.+)$/);
     if (h2Match) {
       if (!foundFirstH2) {
