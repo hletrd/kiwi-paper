@@ -48,7 +48,13 @@ mkdir -p "$CODEX_DIR"
 cp "$SCRIPT_DIR/SKILL.md" "$CODEX_DIR/SKILL.md"
 echo "✓ Codex CLI: $CODEX_DIR"
 
-# --- 4. Gemini CLI: custom command ---
+# --- 4. Cursor: rule file ---
+CURSOR_RULE="$SCRIPT_DIR/CURSOR.mdc"
+if [ -f "$CURSOR_RULE" ]; then
+  echo "  ℹ Cursor: CURSOR.mdc를 프로젝트의 .cursor/rules/kiwi-paper.mdc로 복사하세요"
+fi
+
+# --- 5. Gemini CLI: custom command ---
 GEMINI_CMD_DIR="$HOME/.gemini/commands"
 mkdir -p "$GEMINI_CMD_DIR"
 cat > "$GEMINI_CMD_DIR/kiwi-paper.toml" << 'TOML'
@@ -76,7 +82,7 @@ The user's input: $ARGUMENTS
 TOML
 echo "✓ Gemini CLI: $GEMINI_CMD_DIR/kiwi-paper.toml (use /kiwi-paper)"
 
-# --- 5. Gemini CLI: configure context.fileName to also read AGENTS.md ---
+# --- 6. Gemini CLI: configure context.fileName to also read AGENTS.md ---
 GEMINI_SETTINGS="$HOME/.gemini/settings.json"
 if [ -f "$GEMINI_SETTINGS" ]; then
   # Check if context.fileName already configured
@@ -95,7 +101,7 @@ JSON
   echo "  ✓ Gemini settings: context.fileName configured to read AGENTS.md"
 fi
 
-# --- 6. Install renderer dependencies ---
+# --- 7. Install renderer dependencies ---
 if command -v node >/dev/null 2>&1; then
   NODE_VERSION=$(node -v | sed 's/v//' | cut -d. -f1)
   if [ "$NODE_VERSION" -ge 20 ]; then
@@ -112,7 +118,7 @@ else
   echo "⚠ Node.js not found. HTML renderer will not be available."
 fi
 
-# --- 7. Clean up cloned repo (only with --cleanup flag) ---
+# --- 8. Clean up cloned repo (only with --cleanup flag) ---
 if [ "${1:-}" = "--cleanup" ] && [ -d "$SCRIPT_DIR/.git" ] && [ "$SCRIPT_DIR" != "$CLAUDE_DIR" ]; then
   REAL_SCRIPT=$(cd "$SCRIPT_DIR" && pwd -P)
   REAL_INSTALL=$(cd "$CLAUDE_DIR" && pwd -P)
@@ -131,4 +137,5 @@ echo "  Claude Code:  /kiwi-paper <file|url>"
 echo "  OpenCode:     /kiwi-paper <file|url>"
 echo "  Codex CLI:    \$kiwi-paper <file|url>"
 echo "  Gemini CLI:   /kiwi-paper <file|url>"
+echo "  Cursor:       \"kiwi-paper로 변환해줘\""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
