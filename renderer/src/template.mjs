@@ -36,6 +36,7 @@ export function renderPage({
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: https:; script-src 'unsafe-inline'; connect-src 'none'; frame-src 'none'; object-src 'none';">
 <title>${escapeHtml(title)}</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -1057,7 +1058,7 @@ function getSettingsScript() {
       if (existing) existing.remove();
       var pop = document.createElement('div');
       pop.className = 'fn-popover';
-      pop.innerHTML = fn.innerHTML.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/on\w+\s*=\s*"[^"]*"/gi, '');
+      pop.textContent = fn.textContent;
       pop.style.position = 'absolute';
       pop.style.left = e.pageX + 'px';
       pop.style.top = (e.pageY + 20) + 'px';
