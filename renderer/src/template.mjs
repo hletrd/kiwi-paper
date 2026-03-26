@@ -188,7 +188,8 @@ function escapeHtml(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function buildToc(headings) {
@@ -1056,7 +1057,7 @@ function getSettingsScript() {
       if (existing) existing.remove();
       var pop = document.createElement('div');
       pop.className = 'fn-popover';
-      pop.innerHTML = fn.innerHTML;
+      pop.innerHTML = fn.innerHTML.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/on\w+\s*=\s*"[^"]*"/gi, '');
       pop.style.position = 'absolute';
       pop.style.left = e.pageX + 'px';
       pop.style.top = (e.pageY + 20) + 'px';
