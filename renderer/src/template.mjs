@@ -3,6 +3,8 @@
  * Authentic namu.wiki Liberty skin styling with light/dark mode
  */
 
+import crypto from 'node:crypto';
+
 /**
  * @param {object} opts
  * @param {string} opts.title
@@ -27,6 +29,7 @@ export function renderPage({
   relatedDocs = [],
   subDocs = [],
 }) {
+  const nonce = crypto.randomBytes(16).toString('base64');
   const tocHtml = showToc && headings.length > 0 ? buildToc(headings) : '';
   const navHtml = buildNavigation(navigation);
   const relatedHtml = buildRelatedDocs(relatedDocs, subDocs);
@@ -36,7 +39,7 @@ export function renderPage({
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: https:; script-src 'unsafe-inline'; connect-src 'none'; frame-src 'none'; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: https:; script-src 'nonce-${nonce}'; connect-src 'none'; frame-src 'none'; object-src 'none';">
 <title>${escapeHtml(title)}</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -155,8 +158,8 @@ ${shikiCss ? `<style>${shikiCss}</style>` : ''}
 </button>
 <div class="toc-overlay" aria-hidden="true"></div>
 
-<script>${getSettingsScript()}</script>
-${tocHtml ? `<script>${getTocScript()}</script>` : ''}
+<script nonce="${nonce}">${getSettingsScript()}</script>
+${tocHtml ? `<script nonce="${nonce}">${getTocScript()}</script>` : ''}
 </body>
 </html>`;
 }
