@@ -3,7 +3,7 @@
 # Installs to the correct skill directory for each AI coding tool
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 
 echo "🥝 kiwi-paper installer"
 echo ""
@@ -19,7 +19,11 @@ copy_skill_files() {
     rm -rf "$dest/renderer"
     mkdir -p "$dest/renderer/src"
     cp "$SCRIPT_DIR/renderer/package.json" "$dest/renderer/package.json"
-    cp "$SCRIPT_DIR/renderer/package-lock.json" "$dest/renderer/package-lock.json" 2>/dev/null || true
+    if [ -f "$SCRIPT_DIR/renderer/package-lock.json" ]; then
+      cp "$SCRIPT_DIR/renderer/package-lock.json" "$dest/renderer/package-lock.json"
+    else
+      echo "  ⚠ Warning: renderer/package-lock.json not found, skipping"
+    fi
     cp "$SCRIPT_DIR/renderer/src/render.mjs" "$dest/renderer/src/render.mjs"
     cp "$SCRIPT_DIR/renderer/src/template.mjs" "$dest/renderer/src/template.mjs"
   fi
@@ -85,8 +89,10 @@ echo "✓ Gemini CLI: $GEMINI_CMD_DIR/kiwi-paper.toml (use /kiwi-paper)"
 # --- 6. Gemini CLI: configure context.fileName to also read AGENTS.md ---
 GEMINI_SETTINGS="$HOME/.gemini/settings.json"
 if [ -f "$GEMINI_SETTINGS" ]; then
-  # Check if context.fileName already configured
-  if ! grep -q 'AGENTS.md' "$GEMINI_SETTINGS" 2>/dev/null; then
+  # Check if the file is valid JSON first
+  if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$GEMINI_SETTINGS" 2>/dev/null; then
+    echo "  ⚠ Warning: $GEMINI_SETTINGS exists but is not valid JSON. Please fix it manually and add \"AGENTS.md\" to context.fileName."
+  elif ! grep -q 'AGENTS.md' "$GEMINI_SETTINGS" 2>/dev/null; then
     echo "  ℹ Tip: Add \"AGENTS.md\" to context.fileName in $GEMINI_SETTINGS for full AGENTS.md support"
   fi
 else
@@ -125,8 +131,12 @@ if [ "${1:-}" = "--cleanup" ] && [ -d "$SCRIPT_DIR/.git" ] && [ "$SCRIPT_DIR" !=
   if [ "$REAL_SCRIPT" != "$REAL_INSTALL" ]; then
     echo ""
     echo "Cleaning up cloned repository..."
-    rm -rf "$SCRIPT_DIR"
-    echo "✓ Cloned repo removed"
+    if [ -f "$SCRIPT_DIR/SKILL.md" ] && [ -f "$SCRIPT_DIR/install.sh" ]; then
+      rm -rf "$SCRIPT_DIR"
+      echo "✓ Cloned repo removed"
+    else
+      echo "  ⚠ Warning: expected files not found in $SCRIPT_DIR, skipping cleanup"
+    fi
   fi
 fi
 
