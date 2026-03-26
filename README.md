@@ -109,7 +109,7 @@ cp SKILL.md ~/.claude/skills/kiwi-paper/
 |:---:|------|--------|
 | 1 | **초안** | PDF/URL 읽고 나무위키 스타일 마크다운 초안 작성 |
 | 2 | **다듬기** | 구조 점검, 유머 밸런스 조절, 외부 링크 보강, 빠진 내용 채우기 |
-| 3 | **휴머나이즈** | 번역체·AI체 잡아서 자연스러운 한국어로 손질 |
+| 3 | **휴머나이즈** | 번역체, AI체 잡아서 자연스러운 한국어로 손질 |
 | 4 | **렌더링** | 마크다운 → HTML 변환 (선택) |
 
 3단계가 핵심입니다. 번역투 문장, 기계적 나열, 과잉 수식어, 동어반복 같은 걸 잡아서 사람이 쓴 것처럼 고칩니다.
@@ -162,9 +162,11 @@ node src/render.mjs -i https://example.com/doc.md -o ../dist
 | [Claude Code](https://claude.com/claude-code) | `/kiwi-paper` | `~/.claude/skills/kiwi-paper/` |
 | [OpenCode](https://opencode.ai) | `/kiwi-paper` | `~/.config/opencode/skills/kiwi-paper/` |
 | [Codex CLI](https://github.com/openai/codex) | `$kiwi-paper` | `~/.agents/skills/kiwi-paper/` |
+| Codex App | `$kiwi-paper` | Codex CLI과 동일 |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `/kiwi-paper` | `~/.gemini/commands/kiwi-paper.toml` |
+| [Cursor](https://cursor.com) | 프롬프트로 요청 | `.cursor/rules/kiwi-paper.mdc` |
 
-`./install.sh` 한 번이면 4개 플랫폼 전부 설치됩니다.
+`./install.sh` 한 번이면 전부 설치됩니다. Cursor는 프로젝트에 룰 파일을 복사해서 씁니다.
 
 ## 기여
 
