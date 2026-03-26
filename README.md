@@ -165,8 +165,10 @@ node src/render.mjs -i https://example.com/doc.md -o ../dist
 | Codex App | `$kiwi-paper` | Codex CLI과 동일 |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `/kiwi-paper` | `~/.gemini/commands/kiwi-paper.toml` |
 | [Cursor](https://cursor.com) | 프롬프트로 요청 | `.cursor/rules/kiwi-paper.mdc` |
+| [Antigravity](https://antigravity.google) | 프롬프트로 요청 | Cursor와 동일 |
+| [Claude Cowork](https://claude.com/product/cowork) | 프롬프트로 요청 | 파일 읽기로 SKILL.md 참조 |
 
-`./install.sh` 한 번이면 전부 설치됩니다. Cursor는 프로젝트에 룰 파일을 복사해서 씁니다.
+`./install.sh` 한 번이면 CLI 도구는 전부 설치됩니다. Cursor, Antigravity 같은 IDE는 프로젝트에 룰 파일을 복사해서 씁니다. Claude Cowork는 SKILL.md를 직접 읽어주면 됩니다.
 
 ## 기여
 
