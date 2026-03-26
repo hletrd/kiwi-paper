@@ -203,8 +203,19 @@ function isSafeUrl(urlStr) {
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
   const host = parsed.hostname.toLowerCase();
   // Block localhost and loopback
-  if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host === '::1') return false;
-  // Block link-local
+  if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') return false;
+  // Block IPv6 loopback (::1 and expanded forms)
+  if (host === '::1' || host === '[::1]') return false;
+  if (/^\[?0{0,4}:0{0,4}:0{0,4}:0{0,4}:0{0,4}:0{0,4}:0{0,4}:0*1\]?$/.test(host)) return false;
+  // Block IPv6 unique local (fc00::/7 — fc and fd prefixes)
+  if (/^\[?f[cd]/i.test(host)) return false;
+  // Block IPv6 link-local (fe80::/10)
+  if (/^\[?fe[89ab]/i.test(host)) return false;
+  // Block IPv4-mapped IPv6 (::ffff:x.x.x.x)
+  if (/^\[?::ffff:/i.test(host)) return false;
+  // Block cloud metadata hostnames
+  if (host === 'metadata.google.internal' || host === 'metadata.goog') return false;
+  // Block link-local IPv4
   if (/^169\.254\./.test(host)) return false;
   // Block private IPv4 ranges
   if (/^10\./.test(host)) return false;
@@ -216,7 +227,12 @@ function isSafeUrl(urlStr) {
 async function fetchUrl(url) {
   if (!isSafeUrl(url)) throw new Error(`Blocked unsafe URL: ${url}`);
   console.log(`  ↓ Fetching ${url} ...`);
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(30000), redirect: 'manual' });
+  if (res.status >= 300 && res.status < 400) {
+    const location = res.headers.get('location') || '';
+    if (!location || !isSafeUrl(location)) throw new Error(`Blocked unsafe redirect from ${url}`);
+    return fetchUrl(location);
+  }
   if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
   const contentType = res.headers.get('content-type') || '';
 
@@ -342,6 +358,11 @@ async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
       } else if (sourceDir) {
         // Local relative path: copy file to images/
         const localPath = resolve(sourceDir, src);
+        const realSource = resolve(sourceDir);
+        if (!localPath.startsWith(realSource + '/') && localPath !== realSource) {
+          console.warn(`  Warning: path traversal blocked: ${src}`);
+          continue;
+        }
         if (existsSync(localPath)) {
           const ext = extname(localPath) || '.png';
           const imgName = `img-${String(count + 1).padStart(2, '0')}${ext}`;
@@ -370,16 +391,26 @@ async function downloadRemoteImage(url, imgDir, index) {
     const imgRes = await fetch(url, {
       headers: { 'User-Agent': 'kiwi-paper-renderer/1.0' },
       signal: AbortSignal.timeout(15000),
+      redirect: 'manual',
     });
+
+    if (imgRes.status >= 300 && imgRes.status < 400) {
+      const location = imgRes.headers.get('location') || '';
+      if (!location || !isSafeUrl(location)) {
+        console.warn(`  Warning: blocked unsafe image redirect from ${url}`);
+        return null;
+      }
+      return downloadRemoteImage(location, imgDir, index);
+    }
+
     if (!imgRes.ok) return null;
 
     const contentType = imgRes.headers.get('content-type') || '';
-    if (contentType && !contentType.startsWith('image/') && !contentType.includes('svg')) return null;
+    if (contentType && !contentType.startsWith('image/')) return null;
 
-    // Skip images larger than 50MB to avoid memory exhaustion
-    const contentLength = parseInt(imgRes.headers.get('content-length') || '0', 10);
-    if (contentLength > 50 * 1024 * 1024) {
-      console.warn(`  Warning: image too large (${contentLength} bytes), skipping: ${url}`);
+    // Block SVG downloads entirely (can contain scripts)
+    if (contentType.includes('svg')) {
+      console.warn(`  Warning: SVG download blocked for security: ${url}`);
       return null;
     }
 
@@ -387,7 +418,20 @@ async function downloadRemoteImage(url, imgDir, index) {
     const imgName = `img-${String(index + 1).padStart(2, '0')}${ext}`;
     const imgPath = join(imgDir, imgName);
 
-    const buffer = Buffer.from(await imgRes.arrayBuffer());
+    // Stream with hard 50MB limit
+    const MAX_IMG_SIZE = 50 * 1024 * 1024;
+    const chunks = [];
+    let totalSize = 0;
+    for await (const chunk of imgRes.body) {
+      totalSize += chunk.length;
+      if (totalSize > MAX_IMG_SIZE) {
+        imgRes.body.cancel();
+        console.warn(`  Warning: image exceeds 50MB, skipping: ${url}`);
+        return null;
+      }
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
     writeFileSync(imgPath, buffer);
     return imgName;
   } catch (e) {
@@ -476,7 +520,7 @@ async function initMarked() {
       link({ href, title, tokens }) {
         const text = this.parser.parseInline(tokens);
         const resolvedHref = href && href.endsWith('.md') ? href.replace(/\.md$/, '.html') : href;
-        const safeHref = resolvedHref ? escHtml(resolvedHref) : '';
+        const safeHref = escHtml(isSafeHref(resolvedHref));
         const titleAttr = title ? ` title="${escHtml(title)}"` : '';
         return `<a href="${safeHref}"${titleAttr}>${text}</a>`;
       },
@@ -504,7 +548,7 @@ async function initMarked() {
         return `<div style="overflow-x:auto"><table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
       },
       image({ href, title, text }) {
-        const safeHref = href ? escHtml(href) : '';
+        const safeHref = href ? escHtml(isSafeHref(href)) : '';
         const altText = text ? escHtml(text) : '';
         const titleAttr = title ? ` title="${escHtml(title)}"` : '';
         const caption = text ? `<figcaption>${escHtml(text)}</figcaption>` : '';
@@ -555,16 +599,28 @@ function extractHeadings(html) {
 // ---------------------------------------------------------------------------
 function sanitizeHtml(html) {
   return html
-    // Remove script tags and their content
     .replace(/<script[\s\S]*?<\/script>/gi, '')
-    // Remove iframe, object, embed tags and their content
     .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
     .replace(/<object[\s\S]*?<\/object>/gi, '')
     .replace(/<embed[\s\S]*?<\/embed>/gi, '')
-    // Remove standalone self-closing embed/iframe/object tags
-    .replace(/<(iframe|object|embed)[^>]*\/?>/gi, '')
-    // Strip event handler attributes (onclick=, onload=, etc.)
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<form[\s\S]*?<\/form>/gi, '')
+    .replace(/<svg[\s\S]*?<\/svg>/gi, '')
+    .replace(/<(script|iframe|object|embed|style|form|svg|link|meta|base)[^>]*\/?>/gi, '')
     .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '');
+}
+
+// ---------------------------------------------------------------------------
+// URI scheme safety check — blocks javascript:, vbscript:, data:text/html, file:
+// ---------------------------------------------------------------------------
+function isSafeHref(href) {
+  if (!href) return '';
+  const trimmed = href.trim().toLowerCase();
+  if (trimmed.startsWith('javascript:') || trimmed.startsWith('vbscript:') ||
+      trimmed.startsWith('data:text/html') || trimmed.startsWith('file:')) {
+    return '';
+  }
+  return href;
 }
 
 // ---------------------------------------------------------------------------
