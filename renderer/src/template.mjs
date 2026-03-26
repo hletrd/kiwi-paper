@@ -3,7 +3,7 @@
  * Authentic namu.wiki Liberty skin styling with light/dark mode
  */
 
-import crypto from 'node:crypto';
+import { createHash } from 'node:crypto';
 
 /**
  * @param {object} opts
@@ -29,17 +29,29 @@ export function renderPage({
   relatedDocs = [],
   subDocs = [],
 }) {
-  const nonce = crypto.randomBytes(16).toString('base64');
   const tocHtml = showToc && headings.length > 0 ? buildToc(headings) : '';
   const navHtml = buildNavigation(navigation);
   const relatedHtml = buildRelatedDocs(relatedDocs, subDocs);
+
+  const settingsJs = getSettingsScript();
+  const tocJs = showToc && headings.length > 0 ? getTocScript() : '';
+
+  function sha256(content) {
+    return createHash('sha256').update(content, 'utf8').digest('base64');
+  }
+
+  const scriptHashes = [`'sha256-${sha256(settingsJs)}'`];
+  if (tocJs) scriptHashes.push(`'sha256-${sha256(tocJs)}'`);
+  const cspScriptSrc = scriptHashes.join(' ');
 
   return `<!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: https:; script-src 'nonce-${nonce}'; connect-src 'none'; frame-src 'none'; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: https:; script-src ${cspScriptSrc}; connect-src 'none'; frame-src 'none'; object-src 'none';">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta name="referrer" content="no-referrer">
 <title>${escapeHtml(title)}</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -158,8 +170,8 @@ ${shikiCss ? `<style>${shikiCss}</style>` : ''}
 </button>
 <div class="toc-overlay" aria-hidden="true"></div>
 
-<script nonce="${nonce}">${getSettingsScript()}</script>
-${tocHtml ? `<script nonce="${nonce}">${getTocScript()}</script>` : ''}
+<script>${settingsJs}</script>
+${tocJs ? `<script>${tocJs}</script>` : ''}
 </body>
 </html>`;
 }
@@ -243,8 +255,7 @@ function buildRelatedDocs(relatedDocs, subDocs) {
   return html;
 }
 
-function getStyles() {
-  return `
+const STYLES = `
 /* ============================================================
    kiwi-paper — namu.wiki Liberty skin inspired theme
    ============================================================ */
@@ -890,10 +901,10 @@ body.fn-inline .footnote-ref::after {
   .wiki-toc { break-inside: avoid; }
 }
 `;
-}
 
-function getTocScript() {
-  return `
+function getStyles() { return STYLES; }
+
+const TOC_SCRIPT = `
 (function() {
   var toc = document.querySelector('.wiki-toc');
   var fab = document.querySelector('.toc-fab');
@@ -944,10 +955,10 @@ function getTocScript() {
   observed.forEach(function(o) { observer.observe(o.el); });
 })();
 `;
-}
 
-function getSettingsScript() {
-  return `
+function getTocScript() { return TOC_SCRIPT; }
+
+const SETTINGS_SCRIPT = `
 (function() {
   var panel = document.querySelector('.settings-panel');
   var overlay = document.querySelector('.settings-overlay');
@@ -1050,23 +1061,34 @@ function getSettingsScript() {
     }
   });
 
-  // Footnote popover
+  // Footnote popover — single element, created once and reused
+  var pop = document.createElement('div');
+  pop.className = 'fn-popover';
+  pop.style.position = 'absolute';
+  pop.style.display = 'none';
+  document.body.appendChild(pop);
+
   document.querySelectorAll('.footnote-ref a').forEach(function(a) {
-    a.addEventListener('mouseenter', function(e) {
+    a.addEventListener('mouseenter', function() {
       if (settings['fn-mode'] !== 'popover') return;
       var id = a.getAttribute('href')?.replace('#', '');
       var fn = document.getElementById(id);
       if (!fn) return;
-      var existing = document.querySelector('.fn-popover');
-      if (existing) existing.remove();
-      var pop = document.createElement('div');
-      pop.className = 'fn-popover';
       pop.textContent = fn.textContent;
-      pop.style.position = 'absolute';
-      pop.style.left = e.pageX + 'px';
-      pop.style.top = (e.pageY + 20) + 'px';
-      document.body.appendChild(pop);
-      a.addEventListener('mouseleave', function() { pop.remove(); }, { once: true });
+      pop.style.display = '';
+      var rect = a.getBoundingClientRect();
+      pop.style.left = (rect.left + window.scrollX) + 'px';
+      pop.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+      var popRect = pop.getBoundingClientRect();
+      if (popRect.right > window.innerWidth) {
+        pop.style.left = (window.innerWidth - popRect.width - 8 + window.scrollX) + 'px';
+      }
+      if (popRect.bottom > window.innerHeight) {
+        pop.style.top = (rect.top + window.scrollY - popRect.height - 4) + 'px';
+      }
+    });
+    a.addEventListener('mouseleave', function() {
+      pop.style.display = 'none';
     });
   });
 
@@ -1099,4 +1121,5 @@ function getSettingsScript() {
   applyAll();
 })();
 `;
-}
+
+function getSettingsScript() { return SETTINGS_SCRIPT; }
