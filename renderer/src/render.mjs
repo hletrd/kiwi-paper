@@ -213,8 +213,11 @@ function isSafeUrl(urlStr) {
   if (/^\[?fe[89ab]/i.test(host)) return false;
   // Block IPv4-mapped IPv6 (::ffff:x.x.x.x)
   if (/^\[?::ffff:/i.test(host)) return false;
+  // Block all raw IPv6 addresses (bracket-enclosed) as a safe default
+  if (/^\[/.test(host)) return false;
   // Block cloud metadata hostnames
   if (host === 'metadata.google.internal' || host === 'metadata.goog') return false;
+  if (host === 'instance-data') return false;
   // Block link-local IPv4
   if (/^169\.254\./.test(host)) return false;
   // Block private IPv4 ranges
@@ -266,7 +269,14 @@ function htmlToBasicMarkdown(html) {
     .replace(/<b[^>]*>([\s\S]*?)<\/b>/gi, '**$1**')
     .replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '*$1*')
     .replace(/<i[^>]*>([\s\S]*?)<\/i>/gi, '*$1*')
-    .replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)')
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (match, href, text) => {
+      const decoded = href
+        .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+        .replace(/&#(\d+);?/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+        .replace(/\s/g, '').toLowerCase();
+      if (/^(javascript|vbscript|data):/.test(decoded)) return text;
+      return `[${text}](${href})`;
+    })
     .replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, '`$1`')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, '\n$1\n')
@@ -451,9 +461,9 @@ function getImageExt(contentType, url) {
   if (contentType.includes('jpeg') || contentType.includes('jpg')) return '.jpg';
   if (contentType.includes('gif')) return '.gif';
   if (contentType.includes('webp')) return '.webp';
-  if (contentType.includes('svg')) return '.svg';
+  // SVG downloads are blocked; no .svg case here
   // Try from URL
-  const urlExt = url.match(/\.(png|jpe?g|gif|webp|svg|bmp|tiff?)(\?|$)/i);
+  const urlExt = url.match(/\.(png|jpe?g|gif|webp|bmp|tiff?)(\?|$)/i);
   if (urlExt) return '.' + urlExt[1].toLowerCase();
   return '.png'; // default
 }
@@ -620,7 +630,22 @@ function sanitizeHtml(html) {
     .replace(/\b(href|src|action|formaction)\s*=\s*'[^']*?\b(javascript|vbscript)\s*:[^']*'/gi, '')
     .replace(/\b(href|src|action|formaction)\s*=\s*(?:javascript|vbscript)\s*:[^\s>]*/gi, '')
     // Strip style attributes from raw HTML
-    .replace(/\bstyle\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '');
+    .replace(/\bstyle\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+    // Strip ping attribute (no legitimate use)
+    .replace(/\bping\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+    // Entity-aware URI scheme check for all URL-accepting attributes
+    .replace(/\b(href|src|action|formaction|poster|background|lowsrc|dynsrc|ping|xlink:href)\s*=\s*("[^"]*"|'[^']*')/gi, (match, attr, val) => {
+      const q = val[0];
+      const inner = val.slice(1, -1);
+      const decoded = inner
+        .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+        .replace(/&#(\d+);?/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+        .replace(/&amp;/gi, '&')
+        .replace(/\s+/g, '')
+        .toLowerCase();
+      if (/^(javascript|vbscript|data)\s*:/.test(decoded)) return '';
+      return match;
+    });
 }
 
 // ---------------------------------------------------------------------------
