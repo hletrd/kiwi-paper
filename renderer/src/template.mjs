@@ -813,9 +813,16 @@ body.hide-images .wiki-figure, body.hide-images img:not(.settings-panel img) { d
 body.no-table-wrap td, body.no-table-wrap th { white-space: nowrap; }
 body.no-ext-icon a[href^="http"]::after { display: none; }
 body.no-toc-map .toc-entry.active > a { font-weight: inherit; color: var(--link-color); }
-body.fold-sections .wiki-article > h2 { cursor: pointer; }
-body.fold-sections .wiki-article > h2::after { content: " ▶"; font-size: 0.6em; color: var(--text-muted); vertical-align: middle; }
-body.fold-sections .wiki-article > h2.unfolded::after { content: " ▼"; }
+.wiki-article > h2 { cursor: pointer; }
+
+/* Section heading number links — click number to jump to TOC */
+.wiki-heading-num { color: var(--namu-brand) !important; text-decoration: none !important; font-weight: inherit; }
+.wiki-heading-num:hover { text-decoration: underline !important; }
+.wiki-heading-num::after { display: none !important; }
+
+/* Section fold buttons — [접기]/[펼치기] */
+.wiki-fold-btn { font-size: 0.5em; font-weight: 400; color: var(--text-muted); cursor: pointer; margin-left: 0.5em; vertical-align: middle; user-select: none; display: inline-block; }
+.wiki-fold-btn:hover { color: var(--namu-brand); }
 body.font-small { font-size: 13px; }
 body.font-large { font-size: 17px; }
 body.font-xlarge { font-size: 19px; }
@@ -1092,29 +1099,54 @@ const SETTINGS_SCRIPT = `
     });
   });
 
-  // Section folding — JS-based per-section visibility
-  function updateFolding() {
-    var article = document.querySelector('.wiki-article');
-    if (!article) return;
-    var isFolded = settings['fold-sections'];
-    var h2s = article.querySelectorAll(':scope > h2');
-    h2s.forEach(function(h2) {
-      var next = h2.nextElementSibling;
-      while (next && next.tagName !== 'H2' && next.tagName !== 'H1') {
-        if (!next.classList.contains('wiki-toc') && !next.classList.contains('wiki-related') && !next.classList.contains('page-nav')) {
-          next.style.display = (!isFolded || h2.classList.contains('unfolded')) ? '' : 'none';
-        }
-        next = next.nextElementSibling;
+  // Namu.wiki heading number links — click number to jump to TOC
+  var wikiArticle = document.querySelector('.wiki-article');
+  if (wikiArticle) {
+    wikiArticle.querySelectorAll('h2, h3, h4, h5, h6').forEach(function(h) {
+      var m = h.innerHTML.match(/^([\\d]+(?:\\.[\\d]+)*\\.)[\\s]+/);
+      if (m) {
+        h.innerHTML = '<a href="#toc" class="wiki-heading-num">' + m[1] + '</a> ' + h.innerHTML.slice(m[0].length);
       }
     });
   }
 
-  document.querySelectorAll('.wiki-article > h2').forEach(function(h) {
-    h.addEventListener('click', function() {
-      if (settings['fold-sections']) {
-        h.classList.toggle('unfolded');
-        updateFolding();
+  // Section folding — namu.wiki-style per-section [접기]/[펼치기]
+  function updateSingleFold(h2) {
+    var folded = h2.classList.contains('folded');
+    var btn = h2.querySelector('.wiki-fold-btn');
+    if (btn) btn.textContent = folded ? '[펼치기]' : '[접기]';
+    var next = h2.nextElementSibling;
+    while (next && next.tagName !== 'H2' && next.tagName !== 'H1') {
+      if (!next.classList.contains('wiki-toc') && !next.classList.contains('wiki-related') && !next.classList.contains('page-nav')) {
+        next.style.display = folded ? 'none' : '';
       }
+      next = next.nextElementSibling;
+    }
+  }
+
+  function updateFolding() {
+    var article = document.querySelector('.wiki-article');
+    if (!article) return;
+    var foldAll = settings['fold-sections'];
+    article.querySelectorAll(':scope > h2').forEach(function(h2) {
+      if (foldAll) h2.classList.add('folded');
+      else h2.classList.remove('folded');
+      updateSingleFold(h2);
+    });
+  }
+
+  document.querySelectorAll('.wiki-article > h2').forEach(function(h) {
+    var btn = document.createElement('span');
+    btn.className = 'wiki-fold-btn';
+    btn.textContent = '[접기]';
+    btn.setAttribute('role', 'button');
+    btn.setAttribute('tabindex', '0');
+    h.appendChild(btn);
+
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      h.classList.toggle('folded');
+      updateSingleFold(h);
     });
   });
 
