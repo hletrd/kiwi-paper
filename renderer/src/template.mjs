@@ -63,10 +63,29 @@ ${shikiCss ? `<style>${shikiCss}</style>` : ''}
 <div class="wiki-wrapper">
   <div class="wiki-header">
     <div class="wiki-header-inner">
-      <a class="wiki-logo" href="${navigation.index || '#'}">🥝 kiwi-paper</a>
-      <button class="settings-toggle" aria-label="디스플레이 설정" title="디스플레이 설정">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
+      <a class="wiki-logo" href="${navigation.index || '#'}">🥝<span style="margin-left:0.35em"></span>kiwi-paper</a>
+      <div class="header-controls">
+        <!-- KO/EN segmented toggle -->
+        <div class="seg-toggle" id="lang-toggle" role="switch" aria-label="언어 전환" tabindex="0">
+          <div class="seg-toggle-pill"></div>
+          <div class="seg-toggle-item active" data-val="en">EN</div>
+          <div class="seg-toggle-item" data-val="ko">KO</div>
+        </div>
+        <!-- Sun/Moon icon toggle -->
+        <div class="icon-toggle" id="theme-toggle" role="switch" aria-label="테마 전환" tabindex="0">
+          <div class="icon-toggle-pill"></div>
+          <div class="icon-toggle-item active" data-val="light">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" fill="none"/><g stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/><line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/></g></svg>
+          </div>
+          <div class="icon-toggle-item" data-val="dark">
+            <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+          </div>
+        </div>
+        <!-- Settings gear -->
+        <button class="settings-toggle" aria-label="디스플레이 설정" title="디스플레이 설정">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -220,7 +239,8 @@ function buildToc(headings) {
     for (let i = depth + 1; i < counters.length; i++) counters[i] = 0;
     // Build number string
     const num = counters.slice(0, depth + 1).join('.');
-    return `<div class="toc-entry toc-depth-${depth}"><a href="#${escapeHtml(h.id)}"><span class="toc-num">${num}.</span> ${escapeHtml(h.text)}</a></div>`;
+    const cleanText = h.text.replace(/^\d+(\.\d+)*\.\s*/, '');
+    return `<div class="toc-entry toc-depth-${depth}"><a href="#${escapeHtml(h.id)}"><span class="toc-num">${num}.</span> ${escapeHtml(cleanText)}</a></div>`;
   });
 
   return `<div class="wiki-toc" id="toc">
@@ -373,6 +393,7 @@ body {
 .wiki-header {
   background: var(--namu-brand);
   padding: 0;
+  margin: 0 -16px;
 }
 .wiki-header-inner {
   display: flex;
@@ -393,6 +414,7 @@ body {
   border-bottom: 1px solid var(--border);
   background: var(--bg-header);
   padding: 0.8rem 1.2rem;
+  margin: 0 -16px;
 }
 .wiki-title {
   font-size: 1.8rem;
@@ -420,6 +442,8 @@ h1, h2, h3, h4, h5, h6 {
 .wiki-article h1 { font-size: 36px; }
 .wiki-article h2 { font-size: 27px; margin: 32.4px 0 21.6px; }
 .wiki-article h3 { font-size: 24px; margin: 28.8px 0 19.2px; }
+.wiki-article h2 > a[href="#toc"], .wiki-article h3 > a[href="#toc"] { color: var(--namu-brand); text-decoration: none; font-weight: 600; margin-right: 0.3em; }
+.wiki-article h2 > a[href="#toc"]:hover, .wiki-article h3 > a[href="#toc"]:hover { text-decoration: underline; }
 .wiki-article h4 { font-size: 22.5px; border-bottom: none; }
 .wiki-article h5 { font-size: 19.5px; border-bottom: none; }
 .wiki-article h6 { font-size: 16.5px; border-bottom: none; }
@@ -429,11 +453,11 @@ p { margin: 0; font-size: 14.4px; line-height: 21.6px; }
 a { color: var(--link-color); text-decoration: none; transition: color 0.1s; }
 a:hover { color: var(--link-hover); text-decoration: underline; }
 
-.wiki-article a:not([href^="http"]):not(.footnote-ref):not(.footnote-backref) {
+.wiki-article a:not([href^="http"]):not(.footnote-ref):not(.footnote-backref):not([href="#toc"]):not([data-footnote-ref]):not(.fn-num) {
   color: var(--text-primary);
   font-weight: 700;
 }
-.wiki-article a:not([href^="http"]):not(.footnote-ref):not(.footnote-backref):hover {
+.wiki-article a:not([href^="http"]):not(.footnote-ref):not(.footnote-backref):not([href="#toc"]):not([data-footnote-ref]):not(.fn-num):hover {
   color: var(--link-color);
 }
 
@@ -443,6 +467,7 @@ a[href^="http"]:not([href*="kiwi-paper"])::after {
   font-size: 0.75em;
   color: var(--link-external);
   vertical-align: super;
+  line-height: 0;
 }
 
 strong { font-weight: 700; }
@@ -568,15 +593,23 @@ section.footnotes {
   line-height: 2em;
   color: var(--text-muted);
 }
-section.footnotes ol { padding-left: 1.5em; }
+section.footnotes ol { padding-left: 1.5em; list-style: none; }
 section.footnotes li { margin: 0.3em 0; }
+section.footnotes li .fn-num {
+  color: var(--namu-brand);
+  font-weight: 600;
+  text-decoration: none;
+  margin-right: 0.2em;
+}
+section.footnotes li .fn-num:hover { text-decoration: underline; }
 .footnote-ref {
   font-size: 0.75em;
   vertical-align: super;
   line-height: 0;
 }
-.footnote-ref a { color: var(--link-color); font-size: 12px; font-weight: normal; }
-.footnote-backref { text-decoration: none; margin-left: 0.3em; color: var(--namu-brand); }
+.footnote-ref a { color: var(--namu-brand); font-size: 12px; font-weight: normal; }
+a[data-footnote-ref] { color: var(--namu-brand) !important; font-weight: 600; }
+.footnote-backref, [data-footnote-backref] { display: none; }
 
 /* --- KaTeX --- */
 .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.4em 0; }
@@ -681,6 +714,87 @@ img { max-width: 100%; height: auto; }
   transition: all 0.15s;
 }
 .settings-toggle:hover { background: rgba(255,255,255,0.25); color: #fff; }
+
+/* --- Header Toggle Controls --- */
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Segmented pill toggle (KO/EN) */
+.seg-toggle {
+  position: relative;
+  display: flex;
+  background: rgba(0,0,0,0.2);
+  border-radius: 20px;
+  padding: 3px;
+  cursor: pointer;
+  user-select: none;
+}
+.seg-toggle-item {
+  position: relative;
+  z-index: 1;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.6);
+  border-radius: 17px;
+  transition: color 0.3s;
+  text-align: center;
+  line-height: 1.5;
+}
+.seg-toggle-item.active { color: var(--namu-brand); }
+.seg-toggle-pill {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  height: calc(100% - 6px);
+  width: calc(50% - 3px);
+  background: #fff;
+  border-radius: 17px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.seg-toggle.right .seg-toggle-pill { transform: translateX(100%); }
+
+/* Icon pill toggle (theme) */
+.icon-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(0,0,0,0.2);
+  border-radius: 20px;
+  padding: 3px;
+  cursor: pointer;
+  user-select: none;
+}
+.icon-toggle-item {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 17px;
+  transition: color 0.3s;
+  color: rgba(255,255,255,0.5);
+}
+.icon-toggle-item.active { color: var(--namu-brand); }
+.icon-toggle-item svg { width: 14px; height: 14px; fill: currentColor; }
+.icon-toggle-pill {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 28px;
+  height: calc(100% - 6px);
+  background: #fff;
+  border-radius: 17px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.icon-toggle.right .icon-toggle-pill { transform: translateX(100%); }
 
 .settings-overlay {
   display: none;
@@ -813,9 +927,24 @@ body.hide-images .wiki-figure, body.hide-images img:not(.settings-panel img) { d
 body.no-table-wrap td, body.no-table-wrap th { white-space: nowrap; }
 body.no-ext-icon a[href^="http"]::after { display: none; }
 body.no-toc-map .toc-entry.active > a { font-weight: inherit; color: var(--link-color); }
-body.fold-sections .wiki-article > h2 { cursor: pointer; }
-body.fold-sections .wiki-article > h2::after { content: " ▶"; font-size: 0.6em; color: var(--text-muted); vertical-align: middle; }
-body.fold-sections .wiki-article > h2.unfolded::after { content: " ▼"; }
+/* Section collapse */
+.wiki-article > h2, .wiki-article h3 { cursor: pointer; position: relative; display: flex; align-items: center; }
+.wiki-article > h2::after, .wiki-article h3::after {
+  content: "";
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(45deg);
+  margin-left: 10px;
+  transition: transform 0.25s ease;
+}
+.wiki-article > h2.collapsed::after, .wiki-article h3.collapsed::after {
+  transform: rotate(-45deg);
+}
+.wiki-article .section-content {}
+.wiki-article .section-content.collapsed { display: none; }
 body.font-small { font-size: 13px; }
 body.font-large { font-size: 17px; }
 body.font-xlarge { font-size: 19px; }
@@ -1049,6 +1178,66 @@ const SETTINGS_SCRIPT = `
     if (settings.theme === 'auto') applyTheme('auto');
   });
 
+  // --- Header Theme Toggle (sun/moon) ---
+  var themeToggle = document.getElementById('theme-toggle');
+
+  function isDarkActive() {
+    var t = document.documentElement.getAttribute('data-theme');
+    return t === 'dark' || t === 'black';
+  }
+
+  function syncThemeSlider() {
+    if (!themeToggle) return;
+    var dark = isDarkActive();
+    themeToggle.classList.toggle('right', dark);
+    themeToggle.querySelector('[data-val="light"]').classList.toggle('active', !dark);
+    themeToggle.querySelector('[data-val="dark"]').classList.toggle('active', dark);
+  }
+
+  if (themeToggle) {
+    syncThemeSlider();
+    themeToggle.addEventListener('click', function() {
+      settings.theme = isDarkActive() ? 'light' : 'dark';
+      saveSettings(settings);
+      applyAll();
+      syncThemeSlider();
+    });
+  }
+
+  // --- Header Lang Toggle (KO/EN) ---
+  var langToggle = document.getElementById('lang-toggle');
+  if (langToggle) {
+    var currentLang = 'ko';
+    function syncLangToggle() {
+      var isKo = currentLang === 'ko';
+      langToggle.classList.toggle('right', isKo);
+      langToggle.querySelector('[data-val="en"]').classList.toggle('active', !isKo);
+      langToggle.querySelector('[data-val="ko"]').classList.toggle('active', isKo);
+      document.documentElement.setAttribute('lang', currentLang);
+    }
+    syncLangToggle();
+    langToggle.addEventListener('click', function() {
+      currentLang = currentLang === 'ko' ? 'en' : 'ko';
+      syncLangToggle();
+    });
+  }
+
+  // Insert clickable footnote numbers in footnotes section
+  document.querySelectorAll('section.footnotes ol li').forEach(function(li, i) {
+    var num = i + 1;
+    var refId = 'footnote-ref-' + num;
+    var link = document.createElement('a');
+    link.className = 'fn-num';
+    link.href = '#' + refId;
+    link.textContent = num + '. ';
+    var p = li.querySelector('p');
+    if (p) {
+      p.insertBefore(link, p.firstChild);
+    } else {
+      li.insertBefore(link, li.firstChild);
+    }
+  });
+
   // Populate footnote inline text (for inline mode)
   document.querySelectorAll('.footnote-ref').forEach(function(ref) {
     var link = ref.querySelector('a');
@@ -1092,33 +1281,49 @@ const SETTINGS_SCRIPT = `
     });
   });
 
-  // Section folding — JS-based per-section visibility
-  function updateFolding() {
-    var article = document.querySelector('.wiki-article');
-    if (!article) return;
-    var isFolded = settings['fold-sections'];
-    var h2s = article.querySelectorAll(':scope > h2');
-    h2s.forEach(function(h2) {
-      var next = h2.nextElementSibling;
-      while (next && next.tagName !== 'H2' && next.tagName !== 'H1') {
-        if (!next.classList.contains('wiki-toc') && !next.classList.contains('wiki-related') && !next.classList.contains('page-nav')) {
-          next.style.display = (!isFolded || h2.classList.contains('unfolded')) ? '' : 'none';
-        }
+  // Add back-to-TOC links on section heading numbers
+  document.querySelectorAll('.wiki-article h2[id], .wiki-article h3[id]').forEach(function(h) {
+    var text = h.textContent;
+    var match = text.match(/^(\d+(\.\d+)*\.)\s*/);
+    if (!match) return;
+    var num = match[1];
+    var rest = text.slice(match[0].length);
+    h.innerHTML = '<a href="#toc">' + num + '</a> ' + rest;
+  });
+
+  // Section collapse: wrap content after h2/h3 headings into .section-content divs
+  function setupCollapse(parent, headingSelector, stopTags) {
+    var headings = parent.querySelectorAll(headingSelector);
+    headings.forEach(function(h) {
+      var wrapper = document.createElement('div');
+      wrapper.className = 'section-content';
+      var next = h.nextElementSibling;
+      while (next && stopTags.indexOf(next.tagName) === -1 && !next.classList.contains('wiki-toc') && !next.classList.contains('wiki-related')) {
+        var curr = next;
         next = next.nextElementSibling;
+        wrapper.appendChild(curr);
       }
+      if (wrapper.childNodes.length > 0) {
+        h.after(wrapper);
+      }
+      h.addEventListener('click', function(e) {
+        if (e.target.closest('a')) return;
+        var content = h.nextElementSibling;
+        if (!content || !content.classList.contains('section-content')) return;
+        h.classList.toggle('collapsed');
+        content.classList.toggle('collapsed');
+      });
     });
   }
 
-  document.querySelectorAll('.wiki-article > h2').forEach(function(h) {
-    h.addEventListener('click', function() {
-      if (settings['fold-sections']) {
-        h.classList.toggle('unfolded');
-        updateFolding();
-      }
-    });
-  });
+  var article = document.querySelector('.wiki-article');
+  if (article) {
+    setupCollapse(article, ':scope > h3', ['H2', 'H3']);
+    setupCollapse(article, ':scope > h2', ['H2']);
+  }
 
   applyAll();
+  syncThemeSlider();
 })();
 `;
 
