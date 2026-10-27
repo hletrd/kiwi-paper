@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: https:; script-src 'sha256-mmLRNXQine+dvohkXsWCNrSpAp7pPFQWPSvWDlLiCKE=' 'sha256-F9KY/WEeEd2bxGKlCvoaYxSitkbN0R02jhMNgLYvIGQ='; connect-src 'none'; frame-src 'none'; object-src 'none';">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta name="referrer" content="no-referrer">
+<title>CostNav: A Navigation Benchmark for Cost-Aware Evaluation of Embodied Agents</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>@font-face{font-display:block;font-family:KaTeX_AMS;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_AMS-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_AMS-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_AMS-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Caligraphic;font-style:normal;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Caligraphic-Bold.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Caligraphic-Bold.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Caligraphic-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Caligraphic;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Caligraphic-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Caligraphic-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Caligraphic-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Fraktur;font-style:normal;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Fraktur-Bold.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Fraktur-Bold.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Fraktur-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Fraktur;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Fraktur-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Fraktur-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Fraktur-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:normal;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-Bold.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-Bold.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:italic;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-BoldItalic.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-BoldItalic.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-BoldItalic.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:italic;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-Italic.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-Italic.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-Italic.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Main-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Math;font-style:italic;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Math-BoldItalic.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Math-BoldItalic.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Math-BoldItalic.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Math;font-style:italic;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Math-Italic.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Math-Italic.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Math-Italic.ttf) format("truetype")}@font-face{font-display:block;font-family:"KaTeX_SansSerif";font-style:normal;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_SansSerif-Bold.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_SansSerif-Bold.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_SansSerif-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:"KaTeX_SansSerif";font-style:italic;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_SansSerif-Italic.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_SansSerif-Italic.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_SansSerif-Italic.ttf) format("truetype")}@font-face{font-display:block;font-family:"KaTeX_SansSerif";font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_SansSerif-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_SansSerif-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_SansSerif-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Script;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Script-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Script-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Script-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size1;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size1-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size1-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size1-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size2;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size2-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size2-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size2-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size3;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size3-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size3-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size3-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size4;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size4-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size4-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Size4-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Typewriter;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Typewriter-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Typewriter-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/KaTeX_Typewriter-Regular.ttf) format("truetype")}.katex{font:normal 1.21em KaTeX_Main,Times New Roman,serif;line-height:1.2;text-indent:0;text-rendering:auto}.katex *{-ms-high-contrast-adjust:none!important;border-color:currentColor}.katex .katex-version:after{content:"0.16.38"}.katex .katex-mathml{clip:rect(1px,1px,1px,1px);border:0;height:1px;overflow:hidden;padding:0;position:absolute;width:1px}.katex .katex-html>.newline{display:block}.katex .base{position:relative;white-space:nowrap;width:-webkit-min-content;width:-moz-min-content;width:min-content}.katex .base,.katex .strut{display:inline-block}.katex .textbf{font-weight:700}.katex .textit{font-style:italic}.katex .textrm{font-family:KaTeX_Main}.katex .textsf{font-family:KaTeX_SansSerif}.katex .texttt{font-family:KaTeX_Typewriter}.katex .mathnormal{font-family:KaTeX_Math;font-style:italic}.katex .mathit{font-family:KaTeX_Main;font-style:italic}.katex .mathrm{font-style:normal}.katex .mathbf{font-family:KaTeX_Main;font-weight:700}.katex .boldsymbol{font-family:KaTeX_Math;font-style:italic;font-weight:700}.katex .amsrm,.katex .mathbb,.katex .textbb{font-family:KaTeX_AMS}.katex .mathcal{font-family:KaTeX_Caligraphic}.katex .mathfrak,.katex .textfrak{font-family:KaTeX_Fraktur}.katex .mathboldfrak,.katex .textboldfrak{font-family:KaTeX_Fraktur;font-weight:700}.katex .mathtt{font-family:KaTeX_Typewriter}.katex .mathscr,.katex .textscr{font-family:KaTeX_Script}.katex .mathsf,.katex .textsf{font-family:KaTeX_SansSerif}.katex .mathboldsf,.katex .textboldsf{font-family:KaTeX_SansSerif;font-weight:700}.katex .mathitsf,.katex .mathsfit,.katex .textitsf{font-family:KaTeX_SansSerif;font-style:italic}.katex .mainrm{font-family:KaTeX_Main;font-style:normal}.katex .vlist-t{border-collapse:collapse;display:inline-table;table-layout:fixed}.katex .vlist-r{display:table-row}.katex .vlist{display:table-cell;position:relative;vertical-align:bottom}.katex .vlist>span{display:block;height:0;position:relative}.katex .vlist>span>span{display:inline-block}.katex .vlist>span>.pstrut{overflow:hidden;width:0}.katex .vlist-t2{margin-right:-2px}.katex .vlist-s{display:table-cell;font-size:1px;min-width:2px;vertical-align:bottom;width:2px}.katex .vbox{align-items:baseline;display:inline-flex;flex-direction:column}.katex .hbox{width:100%}.katex .hbox,.katex .thinbox{display:inline-flex;flex-direction:row}.katex .thinbox{max-width:0;width:0}.katex .msupsub{text-align:left}.katex .mfrac>span>span{text-align:center}.katex .mfrac .frac-line{border-bottom-style:solid;display:inline-block;width:100%}.katex .hdashline,.katex .hline,.katex .mfrac .frac-line,.katex .overline .overline-line,.katex .rule,.katex .underline .underline-line{min-height:1px}.katex .mspace{display:inline-block}.katex .smash{display:inline;line-height:0}.katex .clap,.katex .llap,.katex .rlap{position:relative;width:0}.katex .clap>.inner,.katex .llap>.inner,.katex .rlap>.inner{position:absolute}.katex .clap>.fix,.katex .llap>.fix,.katex .rlap>.fix{display:inline-block}.katex .llap>.inner{right:0}.katex .clap>.inner,.katex .rlap>.inner{left:0}.katex .clap>.inner>span{margin-left:-50%;margin-right:50%}.katex .rule{border:0 solid;display:inline-block;position:relative}.katex .hline,.katex .overline .overline-line,.katex .underline .underline-line{border-bottom-style:solid;display:inline-block;width:100%}.katex .hdashline{border-bottom-style:dashed;display:inline-block;width:100%}.katex .sqrt>.root{margin-left:.2777777778em;margin-right:-.5555555556em}.katex .fontsize-ensurer.reset-size1.size1,.katex .sizing.reset-size1.size1{font-size:1em}.katex .fontsize-ensurer.reset-size1.size2,.katex .sizing.reset-size1.size2{font-size:1.2em}.katex .fontsize-ensurer.reset-size1.size3,.katex .sizing.reset-size1.size3{font-size:1.4em}.katex .fontsize-ensurer.reset-size1.size4,.katex .sizing.reset-size1.size4{font-size:1.6em}.katex .fontsize-ensurer.reset-size1.size5,.katex .sizing.reset-size1.size5{font-size:1.8em}.katex .fontsize-ensurer.reset-size1.size6,.katex .sizing.reset-size1.size6{font-size:2em}.katex .fontsize-ensurer.reset-size1.size7,.katex .sizing.reset-size1.size7{font-size:2.4em}.katex .fontsize-ensurer.reset-size1.size8,.katex .sizing.reset-size1.size8{font-size:2.88em}.katex .fontsize-ensurer.reset-size1.size9,.katex .sizing.reset-size1.size9{font-size:3.456em}.katex .fontsize-ensurer.reset-size1.size10,.katex .sizing.reset-size1.size10{font-size:4.148em}.katex .fontsize-ensurer.reset-size1.size11,.katex .sizing.reset-size1.size11{font-size:4.976em}.katex .fontsize-ensurer.reset-size2.size1,.katex .sizing.reset-size2.size1{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size2.size2,.katex .sizing.reset-size2.size2{font-size:1em}.katex .fontsize-ensurer.reset-size2.size3,.katex .sizing.reset-size2.size3{font-size:1.1666666667em}.katex .fontsize-ensurer.reset-size2.size4,.katex .sizing.reset-size2.size4{font-size:1.3333333333em}.katex .fontsize-ensurer.reset-size2.size5,.katex .sizing.reset-size2.size5{font-size:1.5em}.katex .fontsize-ensurer.reset-size2.size6,.katex .sizing.reset-size2.size6{font-size:1.6666666667em}.katex .fontsize-ensurer.reset-size2.size7,.katex .sizing.reset-size2.size7{font-size:2em}.katex .fontsize-ensurer.reset-size2.size8,.katex .sizing.reset-size2.size8{font-size:2.4em}.katex .fontsize-ensurer.reset-size2.size9,.katex .sizing.reset-size2.size9{font-size:2.88em}.katex .fontsize-ensurer.reset-size2.size10,.katex .sizing.reset-size2.size10{font-size:3.4566666667em}.katex .fontsize-ensurer.reset-size2.size11,.katex .sizing.reset-size2.size11{font-size:4.1466666667em}.katex .fontsize-ensurer.reset-size3.size1,.katex .sizing.reset-size3.size1{font-size:.7142857143em}.katex .fontsize-ensurer.reset-size3.size2,.katex .sizing.reset-size3.size2{font-size:.8571428571em}.katex .fontsize-ensurer.reset-size3.size3,.katex .sizing.reset-size3.size3{font-size:1em}.katex .fontsize-ensurer.reset-size3.size4,.katex .sizing.reset-size3.size4{font-size:1.1428571429em}.katex .fontsize-ensurer.reset-size3.size5,.katex .sizing.reset-size3.size5{font-size:1.2857142857em}.katex .fontsize-ensurer.reset-size3.size6,.katex .sizing.reset-size3.size6{font-size:1.4285714286em}.katex .fontsize-ensurer.reset-size3.size7,.katex .sizing.reset-size3.size7{font-size:1.7142857143em}.katex .fontsize-ensurer.reset-size3.size8,.katex .sizing.reset-size3.size8{font-size:2.0571428571em}.katex .fontsize-ensurer.reset-size3.size9,.katex .sizing.reset-size3.size9{font-size:2.4685714286em}.katex .fontsize-ensurer.reset-size3.size10,.katex .sizing.reset-size3.size10{font-size:2.9628571429em}.katex .fontsize-ensurer.reset-size3.size11,.katex .sizing.reset-size3.size11{font-size:3.5542857143em}.katex .fontsize-ensurer.reset-size4.size1,.katex .sizing.reset-size4.size1{font-size:.625em}.katex .fontsize-ensurer.reset-size4.size2,.katex .sizing.reset-size4.size2{font-size:.75em}.katex .fontsize-ensurer.reset-size4.size3,.katex .sizing.reset-size4.size3{font-size:.875em}.katex .fontsize-ensurer.reset-size4.size4,.katex .sizing.reset-size4.size4{font-size:1em}.katex .fontsize-ensurer.reset-size4.size5,.katex .sizing.reset-size4.size5{font-size:1.125em}.katex .fontsize-ensurer.reset-size4.size6,.katex .sizing.reset-size4.size6{font-size:1.25em}.katex .fontsize-ensurer.reset-size4.size7,.katex .sizing.reset-size4.size7{font-size:1.5em}.katex .fontsize-ensurer.reset-size4.size8,.katex .sizing.reset-size4.size8{font-size:1.8em}.katex .fontsize-ensurer.reset-size4.size9,.katex .sizing.reset-size4.size9{font-size:2.16em}.katex .fontsize-ensurer.reset-size4.size10,.katex .sizing.reset-size4.size10{font-size:2.5925em}.katex .fontsize-ensurer.reset-size4.size11,.katex .sizing.reset-size4.size11{font-size:3.11em}.katex .fontsize-ensurer.reset-size5.size1,.katex .sizing.reset-size5.size1{font-size:.5555555556em}.katex .fontsize-ensurer.reset-size5.size2,.katex .sizing.reset-size5.size2{font-size:.6666666667em}.katex .fontsize-ensurer.reset-size5.size3,.katex .sizing.reset-size5.size3{font-size:.7777777778em}.katex .fontsize-ensurer.reset-size5.size4,.katex .sizing.reset-size5.size4{font-size:.8888888889em}.katex .fontsize-ensurer.reset-size5.size5,.katex .sizing.reset-size5.size5{font-size:1em}.katex .fontsize-ensurer.reset-size5.size6,.katex .sizing.reset-size5.size6{font-size:1.1111111111em}.katex .fontsize-ensurer.reset-size5.size7,.katex .sizing.reset-size5.size7{font-size:1.3333333333em}.katex .fontsize-ensurer.reset-size5.size8,.katex .sizing.reset-size5.size8{font-size:1.6em}.katex .fontsize-ensurer.reset-size5.size9,.katex .sizing.reset-size5.size9{font-size:1.92em}.katex .fontsize-ensurer.reset-size5.size10,.katex .sizing.reset-size5.size10{font-size:2.3044444444em}.katex .fontsize-ensurer.reset-size5.size11,.katex .sizing.reset-size5.size11{font-size:2.7644444444em}.katex .fontsize-ensurer.reset-size6.size1,.katex .sizing.reset-size6.size1{font-size:.5em}.katex .fontsize-ensurer.reset-size6.size2,.katex .sizing.reset-size6.size2{font-size:.6em}.katex .fontsize-ensurer.reset-size6.size3,.katex .sizing.reset-size6.size3{font-size:.7em}.katex .fontsize-ensurer.reset-size6.size4,.katex .sizing.reset-size6.size4{font-size:.8em}.katex .fontsize-ensurer.reset-size6.size5,.katex .sizing.reset-size6.size5{font-size:.9em}.katex .fontsize-ensurer.reset-size6.size6,.katex .sizing.reset-size6.size6{font-size:1em}.katex .fontsize-ensurer.reset-size6.size7,.katex .sizing.reset-size6.size7{font-size:1.2em}.katex .fontsize-ensurer.reset-size6.size8,.katex .sizing.reset-size6.size8{font-size:1.44em}.katex .fontsize-ensurer.reset-size6.size9,.katex .sizing.reset-size6.size9{font-size:1.728em}.katex .fontsize-ensurer.reset-size6.size10,.katex .sizing.reset-size6.size10{font-size:2.074em}.katex .fontsize-ensurer.reset-size6.size11,.katex .sizing.reset-size6.size11{font-size:2.488em}.katex .fontsize-ensurer.reset-size7.size1,.katex .sizing.reset-size7.size1{font-size:.4166666667em}.katex .fontsize-ensurer.reset-size7.size2,.katex .sizing.reset-size7.size2{font-size:.5em}.katex .fontsize-ensurer.reset-size7.size3,.katex .sizing.reset-size7.size3{font-size:.5833333333em}.katex .fontsize-ensurer.reset-size7.size4,.katex .sizing.reset-size7.size4{font-size:.6666666667em}.katex .fontsize-ensurer.reset-size7.size5,.katex .sizing.reset-size7.size5{font-size:.75em}.katex .fontsize-ensurer.reset-size7.size6,.katex .sizing.reset-size7.size6{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size7.size7,.katex .sizing.reset-size7.size7{font-size:1em}.katex .fontsize-ensurer.reset-size7.size8,.katex .sizing.reset-size7.size8{font-size:1.2em}.katex .fontsize-ensurer.reset-size7.size9,.katex .sizing.reset-size7.size9{font-size:1.44em}.katex .fontsize-ensurer.reset-size7.size10,.katex .sizing.reset-size7.size10{font-size:1.7283333333em}.katex .fontsize-ensurer.reset-size7.size11,.katex .sizing.reset-size7.size11{font-size:2.0733333333em}.katex .fontsize-ensurer.reset-size8.size1,.katex .sizing.reset-size8.size1{font-size:.3472222222em}.katex .fontsize-ensurer.reset-size8.size2,.katex .sizing.reset-size8.size2{font-size:.4166666667em}.katex .fontsize-ensurer.reset-size8.size3,.katex .sizing.reset-size8.size3{font-size:.4861111111em}.katex .fontsize-ensurer.reset-size8.size4,.katex .sizing.reset-size8.size4{font-size:.5555555556em}.katex .fontsize-ensurer.reset-size8.size5,.katex .sizing.reset-size8.size5{font-size:.625em}.katex .fontsize-ensurer.reset-size8.size6,.katex .sizing.reset-size8.size6{font-size:.6944444444em}.katex .fontsize-ensurer.reset-size8.size7,.katex .sizing.reset-size8.size7{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size8.size8,.katex .sizing.reset-size8.size8{font-size:1em}.katex .fontsize-ensurer.reset-size8.size9,.katex .sizing.reset-size8.size9{font-size:1.2em}.katex .fontsize-ensurer.reset-size8.size10,.katex .sizing.reset-size8.size10{font-size:1.4402777778em}.katex .fontsize-ensurer.reset-size8.size11,.katex .sizing.reset-size8.size11{font-size:1.7277777778em}.katex .fontsize-ensurer.reset-size9.size1,.katex .sizing.reset-size9.size1{font-size:.2893518519em}.katex .fontsize-ensurer.reset-size9.size2,.katex .sizing.reset-size9.size2{font-size:.3472222222em}.katex .fontsize-ensurer.reset-size9.size3,.katex .sizing.reset-size9.size3{font-size:.4050925926em}.katex .fontsize-ensurer.reset-size9.size4,.katex .sizing.reset-size9.size4{font-size:.462962963em}.katex .fontsize-ensurer.reset-size9.size5,.katex .sizing.reset-size9.size5{font-size:.5208333333em}.katex .fontsize-ensurer.reset-size9.size6,.katex .sizing.reset-size9.size6{font-size:.5787037037em}.katex .fontsize-ensurer.reset-size9.size7,.katex .sizing.reset-size9.size7{font-size:.6944444444em}.katex .fontsize-ensurer.reset-size9.size8,.katex .sizing.reset-size9.size8{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size9.size9,.katex .sizing.reset-size9.size9{font-size:1em}.katex .fontsize-ensurer.reset-size9.size10,.katex .sizing.reset-size9.size10{font-size:1.2002314815em}.katex .fontsize-ensurer.reset-size9.size11,.katex .sizing.reset-size9.size11{font-size:1.4398148148em}.katex .fontsize-ensurer.reset-size10.size1,.katex .sizing.reset-size10.size1{font-size:.2410800386em}.katex .fontsize-ensurer.reset-size10.size2,.katex .sizing.reset-size10.size2{font-size:.2892960463em}.katex .fontsize-ensurer.reset-size10.size3,.katex .sizing.reset-size10.size3{font-size:.337512054em}.katex .fontsize-ensurer.reset-size10.size4,.katex .sizing.reset-size10.size4{font-size:.3857280617em}.katex .fontsize-ensurer.reset-size10.size5,.katex .sizing.reset-size10.size5{font-size:.4339440694em}.katex .fontsize-ensurer.reset-size10.size6,.katex .sizing.reset-size10.size6{font-size:.4821600771em}.katex .fontsize-ensurer.reset-size10.size7,.katex .sizing.reset-size10.size7{font-size:.5785920926em}.katex .fontsize-ensurer.reset-size10.size8,.katex .sizing.reset-size10.size8{font-size:.6943105111em}.katex .fontsize-ensurer.reset-size10.size9,.katex .sizing.reset-size10.size9{font-size:.8331726133em}.katex .fontsize-ensurer.reset-size10.size10,.katex .sizing.reset-size10.size10{font-size:1em}.katex .fontsize-ensurer.reset-size10.size11,.katex .sizing.reset-size10.size11{font-size:1.1996142719em}.katex .fontsize-ensurer.reset-size11.size1,.katex .sizing.reset-size11.size1{font-size:.2009646302em}.katex .fontsize-ensurer.reset-size11.size2,.katex .sizing.reset-size11.size2{font-size:.2411575563em}.katex .fontsize-ensurer.reset-size11.size3,.katex .sizing.reset-size11.size3{font-size:.2813504823em}.katex .fontsize-ensurer.reset-size11.size4,.katex .sizing.reset-size11.size4{font-size:.3215434084em}.katex .fontsize-ensurer.reset-size11.size5,.katex .sizing.reset-size11.size5{font-size:.3617363344em}.katex .fontsize-ensurer.reset-size11.size6,.katex .sizing.reset-size11.size6{font-size:.4019292605em}.katex .fontsize-ensurer.reset-size11.size7,.katex .sizing.reset-size11.size7{font-size:.4823151125em}.katex .fontsize-ensurer.reset-size11.size8,.katex .sizing.reset-size11.size8{font-size:.578778135em}.katex .fontsize-ensurer.reset-size11.size9,.katex .sizing.reset-size11.size9{font-size:.6945337621em}.katex .fontsize-ensurer.reset-size11.size10,.katex .sizing.reset-size11.size10{font-size:.8336012862em}.katex .fontsize-ensurer.reset-size11.size11,.katex .sizing.reset-size11.size11{font-size:1em}.katex .delimsizing.size1{font-family:KaTeX_Size1}.katex .delimsizing.size2{font-family:KaTeX_Size2}.katex .delimsizing.size3{font-family:KaTeX_Size3}.katex .delimsizing.size4{font-family:KaTeX_Size4}.katex .delimsizing.mult .delim-size1>span{font-family:KaTeX_Size1}.katex .delimsizing.mult .delim-size4>span{font-family:KaTeX_Size4}.katex .nulldelimiter{display:inline-block;width:.12em}.katex .delimcenter,.katex .op-symbol{position:relative}.katex .op-symbol.small-op{font-family:KaTeX_Size1}.katex .op-symbol.large-op{font-family:KaTeX_Size2}.katex .accent>.vlist-t,.katex .op-limits>.vlist-t{text-align:center}.katex .accent .accent-body{position:relative}.katex .accent .accent-body:not(.accent-full){width:0}.katex .overlay{display:block}.katex .mtable .vertical-separator{display:inline-block;min-width:1px}.katex .mtable .arraycolsep{display:inline-block}.katex .mtable .col-align-c>.vlist-t{text-align:center}.katex .mtable .col-align-l>.vlist-t{text-align:left}.katex .mtable .col-align-r>.vlist-t{text-align:right}.katex .svg-align{text-align:left}.katex svg{fill:currentColor;stroke:currentColor;display:block;height:inherit;position:absolute;width:100%}.katex svg path{stroke:none}.katex svg{fill-rule:nonzero;fill-opacity:1;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1}.katex img{border-style:none;max-height:none;max-width:none;min-height:0;min-width:0}.katex .stretchy{display:block;overflow:hidden;position:relative;width:100%}.katex .stretchy:after,.katex .stretchy:before{content:""}.katex .hide-tail{overflow:hidden;position:relative;width:100%}.katex .halfarrow-left{left:0;overflow:hidden;position:absolute;width:50.2%}.katex .halfarrow-right{overflow:hidden;position:absolute;right:0;width:50.2%}.katex .brace-left{left:0;overflow:hidden;position:absolute;width:25.1%}.katex .brace-center{left:25%;overflow:hidden;position:absolute;width:50%}.katex .brace-right{overflow:hidden;position:absolute;right:0;width:25.1%}.katex .x-arrow-pad{padding:0 .5em}.katex .cd-arrow-pad{padding:0 .55556em 0 .27778em}.katex .mover,.katex .munder,.katex .x-arrow{text-align:center}.katex .boxpad{padding:0 .3em}.katex .fbox,.katex .fcolorbox{border:.04em solid;box-sizing:border-box}.katex .cancel-pad{padding:0 .2em}.katex .cancel-lap{margin-left:-.2em;margin-right:-.2em}.katex .sout{border-bottom-style:solid;border-bottom-width:.08em}.katex .angl{border-right:.049em solid;border-top:.049em solid;box-sizing:border-box;margin-right:.03889em}.katex .anglpad{padding:0 .03889em}.katex .eqn-num:before{content:"(" counter(katexEqnNo) ")";counter-increment:katexEqnNo}.katex .mml-eqn-num:before{content:"(" counter(mmlEqnNo) ")";counter-increment:mmlEqnNo}.katex .mtr-glue{width:50%}.katex .cd-vert-arrow{display:inline-block;position:relative}.katex .cd-label-left{display:inline-block;position:absolute;right:calc(50% + .3em);text-align:left}.katex .cd-label-right{display:inline-block;left:calc(50% + .3em);position:absolute;text-align:right}.katex-display{display:block;margin:1em 0;text-align:center}.katex-display>.katex{display:block;text-align:center;white-space:nowrap}.katex-display>.katex>.katex-html{display:block;position:relative}.katex-display>.katex>.katex-html>.tag{position:absolute;right:0}.katex-display.leqno>.katex>.katex-html>.tag{left:0;right:auto}.katex-display.fleqn>.katex{padding-left:2em;text-align:left}body{counter-reset:katexEqnNo mmlEqnNo}
+</style>
+
+<style>
+/* ============================================================
+   kiwi-paper — namu.wiki Liberty skin inspired theme
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* --- CSS Custom Properties (Light — default) --- */
+:root, [data-theme="light"] {
+  --namu-brand: #00a495;
+  --namu-brand-hover: #007a6e;
+
+  --bg-page: #f5f5f5;
+  --bg-content: #ffffff;
+  --bg-header: #f5f8fa;
+  --bg-code: #eeeeee;
+  --bg-blockquote: #eeeeee;
+  --bg-toc-title: #f5f8fa;
+  --bg-table-header: #f5f5f5;
+
+  --text-primary: #212529;
+  --text-muted: #6e7478;
+  --text-del: gray;
+
+  --border: #e1e8ed;
+  --border-heading: #cccccc;
+  --border-blockquote: #71bc6d;
+  --border-footnote: #777777;
+
+  --link-color: #0275d8;
+  --link-external: #009900;
+  --link-hover: #014c8c;
+
+  --radius: 0.35rem;
+  --shadow-category: 0.15rem 0.15rem 0 0 #cfdae2;
+}
+
+/* --- Dark Theme --- */
+[data-theme="dark"] {
+  --bg-page: #1a1a1a;
+  --bg-content: #1e1e1e;
+  --bg-header: #2d2f34;
+  --bg-code: #2d2f34;
+  --bg-blockquote: #2a2a2a;
+  --bg-toc-title: #1f2023;
+  --bg-table-header: #2d2f34;
+
+  --text-primary: #dddddd;
+  --text-muted: #999999;
+  --text-del: #aaaaaa;
+
+  --border: #444444;
+  --border-heading: #555555;
+  --border-blockquote: #666c75;
+  --border-footnote: #666666;
+
+  --link-color: #E69720;
+  --link-external: #E69720;
+  --link-hover: #b3771d;
+
+  --shadow-category: 0.15rem 0.15rem 0 0 #333;
+}
+
+/* --- AMOLED Black Theme --- */
+[data-theme="black"] {
+  --bg-page: #000000;
+  --bg-content: #000000;
+  --bg-header: #111111;
+  --bg-code: #0d0d0d;
+  --bg-blockquote: #0a0a0a;
+  --bg-toc-title: #0d0d0d;
+  --bg-table-header: #111111;
+
+  --text-primary: #e0e0e0;
+  --text-muted: #888888;
+  --text-del: #666666;
+
+  --border: #222222;
+  --border-heading: #333333;
+  --border-blockquote: #444444;
+  --border-footnote: #444444;
+
+  --link-color: #E69720;
+  --link-external: #E69720;
+  --link-hover: #b3771d;
+
+  --shadow-category: none;
+}
+
+/* --- Base --- */
+html { font-size: 15px; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Pretendard JP Variable', 'Pretendard JP', 'Pretendard Variable', Pretendard, -apple-system, system-ui, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Noto Sans CJK KR', NanumBarunGothic, Roboto, 'Segoe UI', 'Malgun Gothic', sans-serif;
+  font-size: 15px;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.5;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  transition: background 0.2s, color 0.2s;
+}
+
+/* --- Wiki Wrapper --- */
+.wiki-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 16px;
+  background: var(--bg-content);
+  min-height: 100vh;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+/* --- Header Bar --- */
+.wiki-header {
+  background: var(--namu-brand);
+  padding: 0;
+}
+.wiki-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+}
+.wiki-logo {
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+}
+.wiki-logo:hover { color: #fff; text-decoration: none; opacity: 0.9; }
+
+/* --- Content Header (Title Bar) --- */
+.wiki-content-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-header);
+  padding: 0.8rem 1.2rem;
+}
+.wiki-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  padding: 0;
+  border: none;
+  color: var(--text-primary);
+}
+
+/* --- Content Area --- */
+.wiki-content {
+  padding: 1.2rem 1.5rem 2rem;
+}
+
+/* --- Typography --- */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--text-primary);
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border-heading);
+  scroll-margin-top: 1rem;
+  line-height: 1.5;
+}
+.wiki-article h1 { font-size: 36px; }
+.wiki-article h2 { font-size: 27px; margin: 32.4px 0 21.6px; }
+.wiki-article h3 { font-size: 24px; margin: 28.8px 0 19.2px; }
+.wiki-article h4 { font-size: 22.5px; border-bottom: none; }
+.wiki-article h5 { font-size: 19.5px; border-bottom: none; }
+.wiki-article h6 { font-size: 16.5px; border-bottom: none; }
+
+p { margin: 0; font-size: 14.4px; line-height: 21.6px; }
+
+a { color: var(--link-color); text-decoration: none; transition: color 0.1s; }
+a:hover { color: var(--link-hover); text-decoration: underline; }
+
+.wiki-article a:not([href^="http"]):not(.footnote-ref):not(.footnote-backref) {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.wiki-article a:not([href^="http"]):not(.footnote-ref):not(.footnote-backref):hover {
+  color: var(--link-color);
+}
+
+/* External links get a subtle icon */
+a[href^="http"]:not([href*="kiwi-paper"])::after {
+  content: " ↗";
+  font-size: 0.75em;
+  color: var(--link-external);
+  vertical-align: super;
+}
+
+strong { font-weight: 700; }
+em { font-style: italic; }
+del { color: var(--text-del); text-decoration: line-through; }
+mark { background: #fef08a; padding: 0.1em 0.2em; border-radius: 2px; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 7.5px 0;
+  height: 0;
+}
+
+/* --- Lists --- */
+ul, ol { padding: 0 0 0 1.5em; margin: 0; }
+li { margin: 0; padding: 0; line-height: 21.6px; }
+li > ul, li > ol { margin: 0.15em 0; }
+
+/* --- Blockquotes (namu.wiki style: green left border) --- */
+blockquote {
+  border-left: 5px solid var(--border-blockquote);
+  background: var(--bg-blockquote);
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 0;
+  color: var(--text-primary);
+}
+blockquote p { margin: 0.3em 0; }
+blockquote blockquote { margin: 0.5em 0; }
+
+/* --- Code --- */
+code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 15px;
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  padding: 0.12em 0.35em;
+  border-radius: var(--radius);
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem;
+  overflow-x: auto;
+  margin: 0.8em 0;
+  line-height: 1.55;
+}
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 15px;
+}
+
+/* Shiki dual theme */
+.shiki-light { display: block; }
+.shiki-dark { display: none; }
+[data-theme="dark"] .shiki-light, [data-theme="black"] .shiki-light { display: none; }
+[data-theme="dark"] .shiki-dark, [data-theme="black"] .shiki-dark { display: block; }
+pre.shiki { border: 1px solid var(--border); border-radius: var(--radius); }
+
+/* --- Tables (namu.wiki: tight cells, thin borders) --- */
+table {
+  border-collapse: collapse;
+  width: auto;
+  margin: 0.8em 0;
+  font-size: 0.92em;
+}
+th, td {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+th {
+  background: var(--bg-table-header);
+  font-weight: 600;
+}
+
+/* Responsive table wrapper */
+div:has(> table) { overflow-x: auto; }
+
+/* --- TOC (namu.wiki box style) --- */
+.wiki-toc {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 1em 0 1.5em;
+  overflow: hidden;
+}
+.toc-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  background: var(--bg-toc-title);
+  border-bottom: 1px solid var(--border);
+}
+.toc-body { padding: 0.6rem 1rem; }
+.toc-entry { margin: 0.15em 0; }
+.toc-entry a {
+  color: var(--link-color);
+  text-decoration: none;
+  display: inline-block;
+  padding: 0.1em 0;
+  font-size: 0.9rem;
+  transition: color 0.1s;
+}
+.toc-entry a:hover { text-decoration: underline; }
+.toc-entry.active > a { font-weight: 700; color: var(--namu-brand); }
+.toc-num { color: var(--namu-brand); font-weight: 600; }
+.toc-depth-1 { padding-left: 1.2em; }
+.toc-depth-2 { padding-left: 2.4em; }
+.toc-depth-3 { padding-left: 3.6em; }
+.toc-depth-4 { padding-left: 4.8em; }
+
+/* --- Footnotes (namu.wiki: small text, top border) --- */
+section.footnotes {
+  margin-top: 2.5em;
+  padding-top: 1em;
+  border-top: 1px solid var(--border-footnote);
+  font-size: 0.8em;
+  line-height: 2em;
+  color: var(--text-muted);
+}
+section.footnotes ol { padding-left: 1.5em; }
+section.footnotes li { margin: 0.3em 0; }
+.footnote-ref {
+  font-size: 0.75em;
+  vertical-align: super;
+  line-height: 0;
+}
+.footnote-ref a { color: var(--link-color); font-size: 12px; font-weight: normal; }
+.footnote-backref { text-decoration: none; margin-left: 0.3em; color: var(--namu-brand); }
+
+/* --- KaTeX --- */
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.4em 0; }
+
+/* --- Images / Figures --- */
+img { max-width: 100%; height: auto; }
+.wiki-figure {
+  margin: 1em 0;
+  text-align: center;
+}
+.wiki-figure img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.wiki-figure figcaption {
+  margin-top: 0.5em;
+  font-size: 0.88em;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* --- Navigation --- */
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1em;
+  margin-top: 2.5em;
+  padding: 0.8em 1em;
+  background: var(--bg-header);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9em;
+}
+.nav-prev, .nav-next { flex: 1; }
+.nav-next { text-align: right; }
+.nav-index { flex: 0 0 auto; }
+
+/* --- Footer --- */
+.wiki-footer {
+  border-top: 1px solid var(--border);
+  background: var(--bg-header);
+  padding: 0.8rem 1.2rem;
+  text-align: center;
+  font-size: 0.8em;
+  color: var(--text-muted);
+}
+
+/* --- Index page (doc list) --- */
+.doc-list { list-style: none; padding: 0; }
+.doc-item {
+  margin: 0.4em 0;
+  padding: 0.8em 1em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-category);
+  transition: box-shadow 0.15s;
+}
+.doc-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.doc-item a { font-weight: 600; font-size: 1rem; }
+.doc-desc { margin-top: 0.2em; font-size: 0.88em; color: var(--text-muted); }
+
+/* --- Mobile TOC FAB --- */
+.toc-fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 1001;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--namu-brand);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.toc-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background: rgba(0,0,0,0.4);
+}
+.toc-overlay.open { display: block; }
+
+/* --- Settings Panel --- */
+.settings-toggle {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+.settings-toggle:hover { background: rgba(255,255,255,0.25); color: #fff; }
+
+.settings-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1998;
+  background: rgba(0,0,0,0.4);
+}
+.settings-overlay.open { display: block; }
+
+.settings-panel {
+  position: fixed;
+  top: 0;
+  right: -360px;
+  width: 340px;
+  height: 100vh;
+  z-index: 1999;
+  background: var(--bg-content);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 16px rgba(0,0,0,0.15);
+  transition: right 0.25s ease;
+  overflow-y: auto;
+  font-size: 14px;
+}
+.settings-panel.open { right: 0; }
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-header);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.settings-title { font-weight: 700; font-size: 15px; }
+.settings-close {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+.settings-close:hover { color: var(--text-primary); }
+
+.settings-body { padding: 8px 0; }
+
+.settings-group {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-group-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.settings-radio-group label {
+  display: block;
+  padding: 4px 0;
+  cursor: pointer;
+  font-size: 14px;
+}
+.settings-radio-group input { margin-right: 6px; accent-color: var(--namu-brand); }
+
+.settings-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+/* Toggle switch */
+.toggle { position: relative; display: inline-block; width: 40px; height: 22px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--border);
+  border-radius: 22px;
+  transition: 0.2s;
+}
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--namu-brand); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+/* --- Related/Sub Documents --- */
+.wiki-related {
+  margin-top: 2em;
+  padding: 1em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-header);
+}
+.related-section { margin-bottom: 0.8em; }
+.related-section:last-child { margin-bottom: 0; }
+.related-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--namu-brand);
+  margin-bottom: 0.4em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border);
+}
+.related-list { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.4em 1em; }
+.related-list li { font-size: 14px; }
+.related-list a { color: var(--link-color); }
+
+/* --- Body classes for settings --- */
+body.hide-del del { color: transparent; text-decoration: none; background: var(--bg-code); border-radius: 2px; cursor: pointer; }
+body.hide-del del:hover { color: var(--text-del); text-decoration: line-through; }
+body.hide-images .wiki-figure, body.hide-images img:not(.settings-panel img) { display: none; }
+body.no-table-wrap td, body.no-table-wrap th { white-space: nowrap; }
+body.no-ext-icon a[href^="http"]::after { display: none; }
+body.no-toc-map .toc-entry.active > a { font-weight: inherit; color: var(--link-color); }
+.wiki-article > h2 { cursor: pointer; }
+
+/* Section heading number links — click number to jump to TOC */
+.wiki-heading-num { color: var(--namu-brand) !important; text-decoration: none !important; font-weight: inherit; }
+.wiki-heading-num:hover { text-decoration: underline !important; }
+.wiki-heading-num::after { display: none !important; }
+
+/* Section fold buttons — [접기]/[펼치기] */
+.wiki-fold-btn { font-size: 0.5em; font-weight: 400; color: var(--text-muted); cursor: pointer; margin-left: 0.5em; vertical-align: middle; user-select: none; display: inline-block; }
+.wiki-fold-btn:hover { color: var(--namu-brand); }
+body.font-small { font-size: 13px; }
+body.font-large { font-size: 17px; }
+body.font-xlarge { font-size: 19px; }
+
+/* --- Inline Footnote Mode --- */
+body.fn-inline .footnote-ref a {
+  cursor: default;
+  pointer-events: none;
+}
+body.fn-inline .footnote-ref::after {
+  content: attr(data-fn-text);
+  display: inline;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--bg-blockquote);
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  margin-left: 4px;
+  vertical-align: baseline;
+  font-weight: normal;
+  line-height: 1.5;
+}
+
+/* --- Footnote Popover --- */
+.fn-popover {
+  z-index: 2000;
+  max-width: 400px;
+  padding: 10px 14px;
+  background: var(--bg-content);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  pointer-events: none;
+}
+
+/* --- Mobile --- */
+@media (max-width: 768px) {
+  .wiki-wrapper { border: none; }
+  .wiki-content { padding: 1rem; }
+  .wiki-article h2 { font-size: 1.4rem; }
+  .wiki-article h3 { font-size: 1.25rem; }
+  table { font-size: 0.82em; }
+
+  .toc-fab { display: flex !important; }
+
+  .wiki-toc {
+    position: fixed;
+    top: 0;
+    right: -300px;
+    width: 280px;
+    height: 100vh;
+    z-index: 999;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    border-left: 1px solid var(--border);
+    background: var(--bg-content);
+    box-shadow: -4px 0 16px rgba(0,0,0,0.15);
+    transition: right 0.25s ease;
+    overflow-y: auto;
+  }
+  .wiki-toc.open { right: 0; }
+}
+
+/* --- Print --- */
+@media print {
+  body { background: #fff; color: #000; }
+  .wiki-wrapper { border: none; max-width: 100%; }
+  .wiki-header, .settings-toggle, .settings-panel, .settings-overlay, .toc-fab, .toc-overlay, .page-nav, .wiki-footer { display: none !important; }
+  .wiki-article > * { display: block !important; }
+  .wiki-article > h2::after { display: none; }
+  .wiki-content-header { background: none; border: none; }
+  .wiki-content { padding: 0; }
+  a { color: #000; }
+  a[href]::after { content: " (" attr(href) ")"; font-size: 0.75em; color: #666; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; }
+  a[href^="#"]::after { content: ""; }
+  h1, h2, h3 { break-after: avoid; }
+  table, pre, blockquote { break-inside: avoid; }
+  .wiki-toc { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="wiki-wrapper">
+  <div class="wiki-header">
+    <div class="wiki-header-inner">
+      <a class="wiki-logo" href="#">🥝 kiwi-paper</a>
+      <button class="settings-toggle" aria-label="디스플레이 설정" title="디스플레이 설정">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="wiki-content-header">
+    <h1 class="wiki-title">CostNav: A Navigation Benchmark for Cost-Aware Evaluation of Embodied Agents</h1>
+  </div>
+
+  <div class="wiki-content">
+    <article class="wiki-article">
+      <div class="wiki-toc" id="toc">
+  <div class="toc-title">목차</div>
+  <div class="toc-body"><div class="toc-entry toc-depth-0"><a href="#1-개요"><span class="toc-num">1.</span> 1. 개요</a></div><div class="toc-entry toc-depth-0"><a href="#2-배경-및-관련-연구"><span class="toc-num">2.</span> 2. 배경 및 관련 연구</a></div><div class="toc-entry toc-depth-1"><a href="#21-기존-벤치마크의-문제점"><span class="toc-num">2.1.</span> 2.1. 기존 벤치마크의 문제점</a></div><div class="toc-entry toc-depth-1"><a href="#22-배달-로봇-시장의-현실"><span class="toc-num">2.2.</span> 2.2. 배달 로봇 시장의 현실</a></div><div class="toc-entry toc-depth-0"><a href="#3-핵심-방법론-경제적-비용-모델"><span class="toc-num">3.</span> 3. 핵심 방법론: 경제적 비용 모델</a></div><div class="toc-entry toc-depth-1"><a href="#31-전체-파이프라인"><span class="toc-num">3.1.</span> 3.1. 전체 파이프라인</a></div><div class="toc-entry toc-depth-1"><a href="#32-초기-투자-비용-capex"><span class="toc-num">3.2.</span> 3.2. 초기 투자 비용 (CAPEX)</a></div><div class="toc-entry toc-depth-1"><a href="#33-운영-비용-opex"><span class="toc-num">3.3.</span> 3.3. 운영 비용 (OPEX)</a></div><div class="toc-entry toc-depth-1"><a href="#34-수익-모델"><span class="toc-num">3.4.</span> 3.4. 수익 모델</a></div><div class="toc-entry toc-depth-1"><a href="#35-손익분기점-분석"><span class="toc-num">3.5.</span> 3.5. 손익분기점 분석</a></div><div class="toc-entry toc-depth-0"><a href="#4-시뮬레이션-환경"><span class="toc-num">4.</span> 4. 시뮬레이션 환경</a></div><div class="toc-entry toc-depth-1"><a href="#41-로봇-플랫폼"><span class="toc-num">4.1.</span> 4.1. 로봇 플랫폼</a></div><div class="toc-entry toc-depth-1"><a href="#42-도시-환경과-물리-시뮬레이션"><span class="toc-num">4.2.</span> 4.2. 도시 환경과 물리 시뮬레이션</a></div><div class="toc-entry toc-depth-1"><a href="#43-경제적-난이도-분류"><span class="toc-num">4.3.</span> 4.3. 경제적 난이도 분류</a></div><div class="toc-entry toc-depth-0"><a href="#5-베이스라인-방법론"><span class="toc-num">5.</span> 5. 베이스라인 방법론</a></div><div class="toc-entry toc-depth-0"><a href="#6-실험-및-결과"><span class="toc-num">6.</span> 6. 실험 및 결과</a></div><div class="toc-entry toc-depth-1"><a href="#61-시뮬레이션-결과"><span class="toc-num">6.1.</span> 6.1. 시뮬레이션 결과</a></div><div class="toc-entry toc-depth-1"><a href="#62-경제성-분석-배달-한-번에-30달러-손해"><span class="toc-num">6.2.</span> 6.2. 경제성 분석: 배달 한 번에 30달러 손해</a></div><div class="toc-entry toc-depth-1"><a href="#63-비용-구조-분석"><span class="toc-num">6.3.</span> 6.3. 비용 구조 분석</a></div><div class="toc-entry toc-depth-1"><a href="#64-손익분기점-분석"><span class="toc-num">6.4.</span> 6.4. 손익분기점 분석</a></div><div class="toc-entry toc-depth-1"><a href="#65-기존-지표와의-비교"><span class="toc-num">6.5.</span> 6.5. 기존 지표와의 비교</a></div><div class="toc-entry toc-depth-1"><a href="#66-7가지-방법론-비교"><span class="toc-num">6.6.</span> 6.6. 7가지 방법론 비교</a></div><div class="toc-entry toc-depth-0"><a href="#7-의의-및-한계"><span class="toc-num">7.</span> 7. 의의 및 한계</a></div><div class="toc-entry toc-depth-0"><a href="#8-여담"><span class="toc-num">8.</span> 8. 여담</a></div><div class="toc-entry toc-depth-0"><a href="#9-참고-문헌-및-외부-링크"><span class="toc-num">9.</span> 9. 참고 문헌 및 외부 링크</a></div></div>
+</div>
+      <h1 id="costnav-a-navigation-benchmark-for-cost-aware-evaluation-of-embodied-agents">CostNav: A Navigation Benchmark for Cost-Aware Evaluation of Embodied Agents</h1>
+<blockquote>
+<p>배달 로봇이 돈을 벌 수 있는지 냉정하게 따져본 벤치마크. <del>결론부터 말하면 못 번다</del></p>
+</blockquote>
+<ul>
+<li><strong>원제</strong>: CostNav: A Navigation Benchmark for Cost-Aware Evaluation of Embodied Agents</li>
+<li><strong>저자</strong>: Haebin Seong, Sungmin Kim 외 (MAUM.AI<sup><a id="footnote-ref-1" href="#footnote-1" data-footnote-ref aria-describedby="footnote-label">1</a></sup>, 서울대학교)</li>
+<li><strong>발표</strong>: arXiv:2511.20216, 2025년 11월 (CES 2026 발표)</li>
+<li><strong>링크</strong>: <a href="https://arxiv.org/abs/2511.20216">arXiv</a> | <a href="https://github.com/worv-ai/CostNav">GitHub</a></li>
+</ul>
+<p>배달 로봇 네비게이션 연구의 성능 지표와 실제 상업적 수익성 사이의 간극을 정량적으로 폭로한 최초의 벤치마크다. 기존 벤치마크들이 &quot;목적지에 잘 도착하는가&quot;만 물었다면, CostNav는 &quot;그래서 돈은 버는가&quot;를 묻는다. <del>현실은 잔인하다</del></p>
+<hr>
+<h2 id="1-개요">1. 개요</h2>
+<p>자율 배달 로봇이 대학 캠퍼스와 도심 인도를 누비는 시대가 왔다. <a href="https://www.starship.xyz/">Starship Technologies</a>는 2024년 기준 600만 건 넘게 배달을 완료했고, 2025년에는 Uber Eats와 제휴까지 맺었다. 배달 로봇 시장 규모가 2026년 550억 달러에 달할 것이라는 전망도 나온다.</p>
+<p>그런데 정작 연구 커뮤니티에서는 이 로봇들이 &quot;경제적으로 쓸 만한가&quot;를 제대로 따져본 적이 없었다. 기존 벤치마크<sup><a id="footnote-ref-2" href="#footnote-2" data-footnote-ref aria-describedby="footnote-label">2</a></sup>는 성공률, 충돌 횟수, 경로 길이 같은 기술 지표만 측정한다. 성공률 95%짜리 로봇이 90%짜리보다 항상 좋을까? 전자가 센서 값만 3배 비싸고 전력도 2배 먹는다면 이야기가 달라진다.</p>
+<p>CostNav는 바로 이 질문에 답하기 위해 만들어진 <strong>초소형 네비게이션 경제성 테스트베드</strong>(Micro-Navigation Economic Testbed)다. 배달 한 건당 하드웨어 비용, 에너지 비용, 유지보수 비용, 충돌로 인한 배상금까지 전부 계산해서 <strong>배달 한 번에 얼마를 버는가</strong>(profit per run)를 따진다. 결과는? 현재 최선의 학습 기반 방법으로도 배달 한 번에 <strong>30달러를 까먹는다</strong>. <del>사장님 우리 배달 안 하면 안 돼요?</del></p>
+<h2 id="2-배경-및-관련-연구">2. 배경 및 관련 연구</h2>
+<h3 id="21-기존-벤치마크의-문제점">2.1. 기존 벤치마크의 문제점</h3>
+<p>Embodied AI 커뮤니티에서 네비게이션 벤치마크는 꽤 오래전부터 있었다. <a href="https://aihabitat.org/">Habitat</a>이 실내 PointGoal/ObjectGoal 네비게이션용 시뮬레이터를 내놨고, <a href="https://arxiv.org/abs/1808.10654">Gibson</a>은 실제 3D 스캔 데이터를 활용했다. 실외로 나가면 <a href="https://carla.org/">CARLA</a>가 자율주행 시뮬레이션을, <a href="https://arxiv.org/abs/2505.00690">Urban-Sim</a>이 도심 이동 로봇 시나리오를 제공한다.</p>
+<p><figure class="wiki-figure"><img src="images/img-01.png" alt="벤치마크 비교표" loading="lazy"><figcaption>벤치마크 비교표</figcaption></figure></p>
+<blockquote>
+<p><strong>[그림 1]</strong> CostNav와 기존 벤치마크 비교. 물리 시뮬레이션과 경제성 모델링을 동시에 지원하는 벤치마크는 CostNav가 유일하다. <del>다른 벤치마크들이 게을렀다기보다는 아무도 이런 걸 하고 싶지 않았을 뿐이다</del></p>
+</blockquote>
+<p>문제는 이 벤치마크들이 전부 기술 지표에만 집중한다는 것이다.</p>
+<div ><table><thead><tr><th>지표</th><th>의미</th><th>경제성 반영</th></tr></thead><tbody><tr><td>성공률 (%)</td><td>목적지 도착 비율</td><td>X</td></tr><tr><td>충돌 횟수</td><td>부딪힌 횟수</td><td>X</td></tr><tr><td>경로 길이 (m)</td><td>이동 거리</td><td>X</td></tr><tr><td>탐색 시간 (s)</td><td>소요 시간</td><td>X</td></tr><tr><td><strong>배달당 수익 ($)</strong></td><td><strong>돈을 얼마나 버는가</strong></td><td><strong>O</strong></td></tr></tbody></table></div><p>성공률이 높으면 좋은 거 아닌가 싶겠지만, 현실은 그리 단순하지 않다. 쓰레기통에 살짝 부딪히는 것과 LiDAR 센서에 충격이 가는 것은 충돌 1회로는 같아도 수리비 차이가 어마어마하다. 배달이 &quot;성공&quot;해도 급회전 때문에 음료가 쏟아지면 환불해줘야 한다. 기존 지표로는 이런 차이를 잡아낼 수가 없다.</p>
+<h3 id="22-배달-로봇-시장의-현실">2.2. 배달 로봇 시장의 현실</h3>
+<p>배달 로봇 스타트업들에게 &quot;어떤 네비게이션 기술을 쓸까&quot;는 생존이 걸린 문제다. 비싼 LiDAR에 룰 기반 플래닝을 얹을까, 아니면 값싼 RGB-D 카메라에 딥러닝을 태울까? 센서 값이 3배 차이 나는데 성공률이 5%밖에 안 벌어진다면, 싼 쪽이 사업적으로 훨씬 낫다.</p>
+<p>그런데 이런 의사결정에 필요한 데이터가 없었다. 배달 로봇 회사들의 비용 구조는 기업 비밀이고, 학계 논문은 성능 숫자만 보여준다. CostNav는 이 빈자리를 채우겠다고 나선 거다.</p>
+<h2 id="3-핵심-방법론-경제적-비용-모델">3. 핵심 방법론: 경제적 비용 모델</h2>
+<h3 id="31-전체-파이프라인">3.1. 전체 파이프라인</h3>
+<p>CostNav의 구조를 한 장으로 요약하면 아래 그림과 같다.</p>
+<p><figure class="wiki-figure"><img src="images/img-02.png" alt="CostNav 파이프라인" loading="lazy"><figcaption>CostNav 파이프라인</figcaption></figure></p>
+<blockquote>
+<p><strong>[그림 2]</strong> CostNav의 전체 파이프라인. 시뮬레이션에서 충돌 역학, 에너지 소비, 배달 시간, 음식 상태를 측정하고, 이걸 실제 비용/수익 모델에 대입해서 수익 곡선과 손익분기점을 계산한다. <del>시뮬레이션에서 돈 잃는 걸로 끝나니 다행이다</del></p>
+</blockquote>
+<p>흐름은 간단하다.</p>
+<ol>
+<li><strong>시뮬레이션</strong> (NVIDIA Isaac Sim): 로봇을 가상 도시에서 달리게 하면서 충돌 충격량, 전력 소비, 배달 소요 시간, 음식 흘림 여부를 전부 기록한다</li>
+<li><strong>비용 모델</strong>: 기록된 데이터를 실제 시장 가격에 대입한다. 전기요금은 미국 상업용 요율, 배달 수수료는 Starship 실제 가격, 수리비는 하드웨어 원가 기반</li>
+<li><strong>수익성 분석</strong>: 배달 한 건당 이익(profit per run)을 계산하고, 초기 투자비를 회수하려면 몇 번 배달해야 하는지(손익분기점, BEP)를 구한다</li>
+</ol>
+<p>핵심 공식은 이렇다.</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" ></span><span class="mord text"><span class="mord">Profit</span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord text"><span class="mord">Revenue</span></span><span class="mspace" ></span><span class="mbin">−</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mopen">(</span><span class="mord text"><span class="mord">Pre-run Cost</span></span><span class="mspace" ></span><span class="mbin">+</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord text"><span class="mord">Run Cost</span></span><span class="mclose">)</span></span></span></span></span></p>
+<p>쉽게 풀면, &quot;번 돈에서 초기 투자금과 배달할 때마다 드는 비용을 빼면 이익이다.&quot; 당연한 소리 같지만, 이걸 로봇 네비게이션에 적용한 논문은 이게 처음이다.</p>
+<h3 id="32-초기-투자-비용-capex">3.2. 초기 투자 비용 (CAPEX)</h3>
+<p>로봇을 굴리려면 일단 사야 한다. 초기 투자 비용은 크게 <strong>하드웨어</strong>와 <strong>데이터 수집/학습</strong>으로 나뉜다.</p>
+<p><strong>하드웨어 비용 ($C_{\text{hardware}}$)</strong></p>
+<p>논문에서 사용한 로봇의 하드웨어 구성을 보면:</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">hardware</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">robot</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mbin">+</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">camera</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mbin">+</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">compute</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">$11</span><span class="mord"><span class="mpunct">,</span></span><span class="mord">589</span></span></span></span></span></p>
+<div ><table><thead><tr><th>부품</th><th>가격</th><th>비고</th></tr></thead><tbody><tr><td>COCO 배달 로봇 본체</td><td>$8,600</td><td>Segway 기반</td></tr><tr><td>RGB-D 카메라 (Intel RealSense D435) × 2</td><td>$600</td><td>개당 $300</td></tr><tr><td>NVIDIA Jetson Orin Developer Kit</td><td>$2,389</td><td>온디바이스 추론용</td></tr><tr><td><strong>합계</strong></td><td><strong>$11,589</strong></td><td></td></tr></tbody></table></div><p><del>로봇 한 대 가격이 중고차 한 대 값이다</del></p>
+<p>센서 구성에 따라 가격이 크게 달라진다. LiDAR를 쓰는 Nav2 방식은 $13,000, 카메라만 쓰는 학습 기반 방법은 $8,000, GPS까지 붙이는 CANVAS는 $10,000이다.</p>
+<div ><table><thead><tr><th>방법</th><th>하드웨어 비용</th><th>데이터 수집비</th><th>총 CAPEX</th></tr></thead><tbody><tr><td>Nav2 AMCL</td><td>$13,000</td><td>$0</td><td>$13,000</td></tr><tr><td>Nav2 GPS</td><td>$13,000</td><td>$0</td><td>$13,000</td></tr><tr><td>GNM</td><td>$8,000</td><td>$2,165.79</td><td>$10,165.79</td></tr><tr><td>ViNT</td><td>$8,000</td><td>$2,165.79</td><td>$10,165.79</td></tr><tr><td>NoMaD</td><td>$8,000</td><td>$2,165.79</td><td>$10,165.79</td></tr><tr><td>NavDP</td><td>$8,000</td><td>$2,165.79</td><td>$10,165.79</td></tr><tr><td>CANVAS</td><td>$10,000</td><td>$2,165.79</td><td>$12,165.79</td></tr></tbody></table></div><p><strong>데이터 수집 비용 ($C_{\text{train}}$)</strong></p>
+<p>룰 기반 방식(Nav2)은 지도만 있으면 되니까 데이터 수집 비용이 0이다. 반면 학습 기반 방식은 사람이 로봇을 조종하면서 학습 데이터를 모아야 한다.</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">train</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">shock</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord text"><span class="mord">Impulse</span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord text"><span class="mord">Collision Rate</span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord text"><span class="mord">Episodes</span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">hardware</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span></span></span></span></span></p>
+<p>시급 $33로 65.63시간 일하면 $2,165.79. 여기에 학습 중 충돌로 인한 수리비 $16,238이 추가된다. 학습 534 에피소드 동안 충돌률이 52.3%나 돼서 수리비가 하드웨어 원가의 1.4배에 달한다. <del>학습시키다 로봇이 먼저 박살나는 셈</del></p>
+<p>결국 학습 기반 방법의 총 초기 투자비는 <strong>$27,827</strong>이다. 로봇 살 돈의 2.4배를 학습에 쏟아부어야 한다.</p>
+<h3 id="33-운영-비용-opex">3.3. 운영 비용 (OPEX)</h3>
+<p>로봇을 사서 학습까지 시켰으면 이제 실전이다. 배달 한 건마다 들어가는 비용을 따져보자.</p>
+<p><strong>에너지 비용 ($C_{\text{energy}}$)</strong></p>
+<p><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">energy</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">kWh</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">elec</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span></span></span></span></span></p>
+<p>시뮬레이션에서 측정한 평균 소비전력 551.7W를 1시간 기준으로 환산하면<sup><a id="footnote-ref-3" href="#footnote-3" data-footnote-ref aria-describedby="footnote-label">3</a></sup>:</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">energy</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">0.551</span><span class="mord text"><span class="mord"> kW</span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">1</span><span class="mord text"><span class="mord"> hr</span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">$0.20/</span><span class="mord text"><span class="mord">kWh</span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">$0.11</span></span></span></span></span></p>
+<p>배달 한 번에 전기세 11센트. 이건 거의 무시할 수준이다.</p>
+<p><strong>유지보수 비용 ($C_{\text{maint}}$)</strong></p>
+<p>여기가 진짜 돈 먹는 블랙홀이다.</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">maint</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">shock</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">collision</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">hardware</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span></span></span></span></span></p>
+<p>$c_{\text{shock}}$는 충격 계수로 $0.00001/\text{N·s}$이고, $I_{\text{collision}}$은 시뮬레이션에서 측정한 충돌 충격량(N·s)이다. 충돌률이 54%, 평균 충격량이 501.7 N·s인 현재 베이스라인에서:</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">maint</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">$0.00001/</span><span class="mord text"><span class="mord">N</span><span class="mord text" ><span class="mord" >\cdotp</span></span><span class="mord">s</span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">501.7</span><span class="mord text"><span class="mord"> N</span><span class="mord text" ><span class="mord" >\cdotp</span></span><span class="mord">s</span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">0.54</span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">$11</span><span class="mord"><span class="mpunct">,</span></span><span class="mord">589</span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">$31.40</span></span></span></span></span></p>
+<p>배달 한 번에 유지보수비 31달러 40센트. <del>이쯤 되면 사람이 직접 배달하는 게 낫지 않나</del></p>
+<p><strong>서비스 보상 비용</strong></p>
+<p>배달이 실패하거나 음식이 엎어지면 환불해줘야 한다. 평균 환불금은 배달 수수료($3.49) + 음식 가격($31.93) = <strong>$35.42</strong>. 배달 100건 중 54건은 충돌로 끝나고, 3건은 타임아웃이니 보상 비용도 꽤 크다.</p>
+<p><strong>보행자 안전 비용</strong></p>
+<p>로봇이 사람과 부딪히면 부상 정도에 따라 배상금이 천정부지로 뛴다. CostNav는 자동차 사고 연구에서 쓰이는 AIS(Abbreviated Injury Scale)를 적용했다.</p>
+<div ><table><thead><tr><th>AIS 등급</th><th>부상 정도</th><th>비용</th></tr></thead><tbody><tr><td>AIS 0</td><td>부상 없음</td><td>$380</td></tr><tr><td>AIS 1</td><td>경상</td><td>$8,487</td></tr><tr><td>AIS 2</td><td>중등도</td><td>$60,464</td></tr><tr><td>AIS 3</td><td>중상</td><td>$261,200</td></tr></tbody></table></div><p>50kg짜리 로봇이 시속 7km로 달리다 사람에게 부딪히면, 충돌 시 속도 변화(delta-v)로 부상 확률을 계산한다. 다행히 배달 로봇은 자동차보다 훨씬 느리고 가벼우니까 AIS 3 수준의 중상 확률은 극히 낮지만, 건당 $9에서 $29까지 안전 비용이 발생한다.</p>
+<p><strong>재산 피해 비용</strong></p>
+<p>로봇이 인도 위의 물건을 들이받을 수도 있다.</p>
+<div ><table><thead><tr><th>피해 대상</th><th>비용</th></tr></thead><tbody><tr><td>우체통</td><td>$50</td></tr><tr><td>쓰레기통</td><td>$50</td></tr><tr><td>건물 유리</td><td>$300</td></tr><tr><td>볼라드</td><td>$65</td></tr></tbody></table></div><p><del>시카고에서는 실제로 배달 로봇이 버스 정류장 유리를 박살낸 사건이 일주일에 두 번이나 발생했다</del><sup><a id="footnote-ref-4" href="#footnote-4" data-footnote-ref aria-describedby="footnote-label">4</a></sup></p>
+<p><strong>운영 비용 종합</strong></p>
+<p>7가지 방법론의 운영 비용을 한 표에 정리하면 이렇다.</p>
+<div ><table><thead><tr><th>항목</th><th>Nav2 AMCL</th><th>Nav2 GPS</th><th>GNM</th><th>ViNT</th><th>NoMaD</th><th>NavDP</th><th>CANVAS</th></tr></thead><tbody><tr><td>전기</td><td>$0.003</td><td>$0.003</td><td>$0.001</td><td>$0.001</td><td>$0.000</td><td>$0.000</td><td>$0.003</td></tr><tr><td>서비스 보상</td><td>$5.40</td><td>$10.13</td><td>$3.49</td><td>$3.14</td><td>$3.46</td><td>$3.49</td><td>$3.89</td></tr><tr><td>보행자 안전</td><td>$29.32</td><td>$20.58</td><td>$11.64</td><td>$29.89</td><td>$9.76</td><td>$9.30</td><td>$14.38</td></tr><tr><td>재산 피해</td><td>$0.00</td><td>$1.00</td><td>$3.65</td><td>$6.00</td><td>$12.00</td><td>$0.00</td><td>$6.00</td></tr><tr><td>수리</td><td>$10.85</td><td>$7.23</td><td>$5.26</td><td>$11.84</td><td>$6.90</td><td>$2.96</td><td>$6.58</td></tr><tr><td><strong>합계</strong></td><td><strong>$45.57</strong></td><td><strong>$38.95</strong></td><td><strong>$24.04</strong></td><td><strong>$50.87</strong></td><td><strong>$32.12</strong></td><td><strong>$15.75</strong></td><td><strong>$30.85</strong></td></tr></tbody></table></div><p>NavDP가 $15.75로 가장 저렴하고, ViNT가 $50.87로 가장 비싸다. 보행자 안전 비용 하나가 ViNT를 최악으로 만들었다.</p>
+<h3 id="34-수익-모델">3.4. 수익 모델</h3>
+<p>수익 계산은 의외로 단순하다.</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" ></span><span class="mord mathnormal" >R</span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >r</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">base</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mbin">×</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">sla</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span></span></span></span></span></p>
+<p>배달 기본 수수료 $r_{\text{base}}$는 $3.49다. Starship Technologies와 사우스캐롤라이나 대학교의 실제 배달 서비스 가격을 참고했다. 최대 6km 배달 기준이다.</p>
+<p>$f_{\text{sla}}$는 SLA(서비스 수준 합의) 준수 여부인데, 규칙이 칼같다.</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">sla</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="minner"><span class="mopen delimcenter" ><span class="delimsizing size4">{</span></span><span class="mord"><span class="mtable"><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="mord"><span class="mord">1</span></span></span><span ><span class="pstrut" ></span><span class="mord"><span class="mord">0</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span><span class="arraycolsep" ></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="mord"><span class="mord text"><span class="mord hangul_fallback">배달</span><span class="mord"> </span><span class="mord hangul_fallback">시간</span></span><span class="mspace" ></span><span class="mrel">≤</span><span class="mspace" ></span><span class="mord">600</span><span class="mord text"><span class="mord hangul_fallback">초</span></span></span></span><span ><span class="pstrut" ></span><span class="mord"><span class="mord text"><span class="mord hangul_fallback">배달</span><span class="mord"> </span><span class="mord hangul_fallback">시간</span></span><span class="mspace" ></span><span class="mrel">&gt;</span><span class="mspace" ></span><span class="mord">600</span><span class="mord text"><span class="mord hangul_fallback">초</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></p>
+<p>10분 안에 도착하면 $3.49를 받고, 10분을 넘기면 <strong>0원</strong>이다. 10분 1초에 도착해도 돈을 한 푼도 못 받는다. <del>현실 세계의 환불 정책이란 이런 거다</del></p>
+<h3 id="35-손익분기점-분석">3.5. 손익분기점 분석</h3>
+<p><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" ></span><span class="mord text"><span class="mord">BEP</span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="mord"><span class="mord mathnormal" >R</span><span class="mspace" ></span><span class="mbin">−</span><span class="mspace" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">run</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span></span></span><span ><span class="pstrut" ></span><span class="frac-line" ></span></span><span ><span class="pstrut" ></span><span class="mord"><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">fixed</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></p>
+<p>분모인 $R - C_{\text{run}}$이 배달 한 건당 순이익이다. 이게 양수여야 배달을 할수록 돈을 번다. 음수면? 배달을 할수록 적자가 쌓인다. 그리고 BEP는 &quot;없음&quot;이 된다. 이 시스템은 영원히 본전을 못 뽑는다는 뜻이다.<sup><a id="footnote-ref-5" href="#footnote-5" data-footnote-ref aria-describedby="footnote-label">5</a></sup></p>
+<h2 id="4-시뮬레이션-환경">4. 시뮬레이션 환경</h2>
+<h3 id="41-로봇-플랫폼">4.1. 로봇 플랫폼</h3>
+<p>CostNav는 COCO 배달 로봇을 사용한다. Segway E1 기반의 실제 배달 로봇 모델이다.</p>
+<p><figure class="wiki-figure"><img src="images/img-03.png" alt="CostNav 시뮬레이션 환경" loading="lazy"><figcaption>CostNav 시뮬레이션 환경</figcaption></figure></p>
+<blockquote>
+<p><strong>[그림 3]</strong> CostNav 시뮬레이션 속 배달 로봇. NVIDIA Isaac Sim에서 실제 도시 환경을 재현했다. 급회전하면 음료가 쏟아지는 것까지 시뮬레이션한다. <del>이 정도면 리얼리즘의 끝판왕</del></p>
+</blockquote>
+<p>로봇 스펙을 정리하면:</p>
+<div ><table><thead><tr><th>항목</th><th>스펙</th></tr></thead><tbody><tr><td>크기</td><td>60 × 50 × 55 cm</td></tr><tr><td>무게</td><td>25 kg (적재물 포함)</td></tr><tr><td>최대 속도</td><td>2.0 m/s (시속 7.2km)</td></tr><tr><td>카메라</td><td>RGB-D × 2 (1920×1080, 학습 시 240×135로 다운샘플)</td></tr><tr><td>컴퓨트</td><td>NVIDIA Jetson Orin</td></tr><tr><td>관측 차원</td><td>72,908 (시각 72,900 + 자기수용감각 8)</td></tr></tbody></table></div><h3 id="42-도시-환경과-물리-시뮬레이션">4.2. 도시 환경과 물리 시뮬레이션</h3>
+<p>시뮬레이션은 <a href="https://isaac-sim.github.io/IsaacLab/">NVIDIA Isaac Lab</a> 위에 구축했다. 실제 도시 지도를 기반으로 인도, 횡단보도, 공원, 건물이 늘어선 거리를 만들었다. 보행자, 가로 시설물, 건물이 전부 들어가 있다.</p>
+<p>물리 엔진이 잡아내는 것들:</p>
+<ul>
+<li><strong>에너지 소비</strong>: 모터 토크와 속도에서 실시간 전력 소비를 계산</li>
+<li><strong>충돌 역학</strong>: 접촉 시 충격량(impulse)을 N·s 단위로 정밀 측정</li>
+<li><strong>음식 물리</strong>: 팝콘 입자를 시뮬레이션해서 급회전이나 충돌 시 음식이 얼마나 쏟아지는지까지 계산<sup><a id="footnote-ref-6" href="#footnote-6" data-footnote-ref aria-describedby="footnote-label">6</a></sup></li>
+</ul>
+<p><figure class="wiki-figure"><img src="images/img-04.gif" alt="팝콘 물리 시뮬레이션" loading="lazy"><figcaption>팝콘 물리 시뮬레이션</figcaption></figure></p>
+<blockquote>
+<p><strong>[그림 4]</strong> 팝콘 물리 시뮬레이션. 로봇이 움직일 때 적재함 안의 팝콘 입자가 어떻게 흔들리는지를 시뮬레이션한다. 이걸로 음식 낙하/흘림 비율을 측정한다. <del>팝콘 하나하나까지 시뮬레이션하는 이 집념</del></p>
+</blockquote>
+<h3 id="43-경제적-난이도-분류">4.3. 경제적 난이도 분류</h3>
+<p>CostNav는 경제적 난이도를 3단계로 나눈다.</p>
+<div ><table><thead><tr><th>레벨</th><th>이름</th><th>환경</th><th>특징</th></tr></thead><tbody><tr><td>Level 1</td><td>Ideal (이상적)</td><td>빈 인도</td><td>장애물 없음, 최적 조건. 이론적 최대 처리량 측정용</td></tr><tr><td>Level 2</td><td>Dynamic (동적)</td><td>보행자 있는 인도</td><td>보행자 회피, 가로 시설물, 안전과 효율의 트레이드오프</td></tr><tr><td>Level 3</td><td>Real-World (현실)</td><td>악천후, 야간, 오래된 지도</td><td>날씨, 조명, 예상치 못한 장애물. 구조 비용 발생</td></tr></tbody></table></div><p>이번 논문에서는 Level 1과 Level 2를 실험했다. Level 3는 향후 과제로 남겨뒀다. <del>현실 세계는 아직 너무 무섭다</del></p>
+<h2 id="5-베이스라인-방법론">5. 베이스라인 방법론</h2>
+<p>CostNav는 룰 기반 2종과 학습 기반 5종, 총 7가지 방법을 평가했다.</p>
+<p><strong>룰 기반 (LiDAR + 고전적 플래닝)</strong></p>
+<ul>
+<li><strong>Nav2 AMCL</strong>: ROS2의 Nav2 스택에 AMCL(적응적 몬테카를로 위치추정) 사용. LiDAR와 사전 지도 필요</li>
+<li><strong>Nav2 GPS</strong>: Nav2에 GPS/RTK 위치추정. LiDAR + GPS 구성</li>
+</ul>
+<p><strong>학습 기반 (카메라 + 딥러닝)</strong></p>
+<ul>
+<li><strong>GNM</strong> (General Navigation Models): 범용 네비게이션 모델</li>
+<li><strong>ViNT</strong> (Visual Navigation Transformer): 비전 트랜스포머 기반</li>
+<li><strong>NoMaD</strong> (Goal Masking Diffusion): 디퓨전 모델 기반 네비게이션</li>
+<li><strong>NavDP</strong>: 네비게이션 디퓨전 정책</li>
+<li><strong>CANVAS</strong>: 상식 기반(Commonsense-Aware) 로봇 네비게이션. MAUM.AI의 WoRV 팀이 만든 방법론<sup><a id="footnote-ref-7" href="#footnote-7" data-footnote-ref aria-describedby="footnote-label">7</a></sup></li>
+</ul>
+<p>논문에서 집중적으로 분석한 초기 베이스라인은 <strong>LB-Local</strong>(Learning-Based On-Device)이다. RGB-D 카메라 2대만 쓰고, CNN 인코더(컨볼루션 레이어 3개, 필터 16/32/64) + MLP(히든 유닛 256, 128)로 구성된 비교적 간단한 아키텍처다. PPO로 학습하고 Jetson Orin에서 온디바이스 추론한다. 비싼 LiDAR 없이 카메라만으로 배달하는 실전적 시나리오다.</p>
+<h2 id="6-실험-및-결과">6. 실험 및 결과</h2>
+<h3 id="61-시뮬레이션-결과">6.1. 시뮬레이션 결과</h3>
+<p>도심 인도에서 100회 평가를 돌렸다. 평균 배달 거리 20m, 평균 배달 시간 0.1시간(6분)의 초소형 테스트베드 스케일이다. 실제 배달은 최대 6km, 1시간이니까 그 차이만큼 비용을 선형 스케일링해서 현실에 투영한다.</p>
+<p><strong>Table 1. 시뮬레이션 평가 결과</strong></p>
+<div ><table><thead><tr><th>지표</th><th>값</th></tr></thead><tbody><tr><td><strong>에피소드 종료 유형</strong></td><td></td></tr><tr><td>충돌 (%)</td><td>54.0</td></tr><tr><td>도착 (%)</td><td>43.0</td></tr><tr><td>타임아웃 (%)</td><td>3.0</td></tr><tr><td><strong>물리 지표</strong></td><td></td></tr><tr><td>충돌 충격량 (N·s)</td><td>501.7 ± 2285.7</td></tr><tr><td>평균 소비전력 (W)</td><td>551.7 ± 175.3</td></tr><tr><td>최대 소비전력 (W)</td><td>670.7 ± 215.3</td></tr><tr><td><strong>에피소드 통계</strong></td><td></td></tr><tr><td>평균 배달 시간 (hr)</td><td>0.1</td></tr><tr><td>평균 배달 거리 (m)</td><td>20</td></tr><tr><td>타임아웃 기준 (sec)</td><td>600</td></tr></tbody></table></div><p>54%가 충돌로 끝난다. 100번 배달 보내면 54번은 어딘가에 부딪혀서 멈춘다는 거다. 도착에 성공한 건 43%뿐. <del>절반 이상이 중간에 쓰러지는 배달부라니</del></p>
+<p>학습 데이터 통계도 흥미롭다.</p>
+<p><strong>Table 2. 학습 에피소드 통계</strong></p>
+<div ><table><thead><tr><th>지표</th><th>값</th></tr></thead><tbody><tr><td>총 에피소드</td><td>534</td></tr><tr><td>평균 에피소드 시간 (sec)</td><td>294.5</td></tr><tr><td>도착 (%)</td><td>17.7</td></tr><tr><td>충돌 (%)</td><td>52.3</td></tr><tr><td>타임아웃 (%)</td><td>30.0</td></tr></tbody></table></div><p>학습 중에도 절반 이상이 충돌이다. 도착 성공률은 17.7%밖에 안 된다. 로봇이 배우는 동안 부딪히고 또 부딪힌다. 그래서 학습 비용에 수리비가 포함되는 거다.</p>
+<h3 id="62-경제성-분석-배달-한-번에-30달러-손해">6.2. 경제성 분석: 배달 한 번에 30달러 손해</h3>
+<p>자, 이제 돈 이야기를 해보자. 모든 숫자를 1시간, 6km 현실 배달 기준으로 환산한 결과다.</p>
+<p><strong>Table 3. 종합 경제 성과 (LB-Local)</strong></p>
+<div ><table><thead><tr><th>항목</th><th>금액</th></tr></thead><tbody><tr><td><strong>초기 투자 비용</strong></td><td></td></tr><tr><td>하드웨어</td><td>$11,589</td></tr><tr><td>데이터 수집/학습</td><td>$16,238</td></tr><tr><td><strong>총 초기 비용</strong></td><td><strong>$27,827</strong></td></tr><tr><td><strong>운영 비용 ($/건)</strong></td><td></td></tr><tr><td>에너지</td><td>$0.11</td></tr><tr><td>유지보수</td><td>$31.40</td></tr><tr><td><strong>총 운영 비용</strong></td><td><strong>$31.51</strong></td></tr><tr><td><strong>수익</strong></td><td></td></tr><tr><td>SLA 준수율 (%)</td><td>43.0</td></tr><tr><td><strong>수익 ($/건)</strong></td><td><strong>$1.501</strong></td></tr><tr><td><strong>수익성</strong></td><td></td></tr><tr><td><strong>이익 ($/건)</strong></td><td><strong>-$30.009</strong></td></tr><tr><td><strong>손익분기점</strong></td><td><strong>없음</strong></td></tr></tbody></table></div><p>배달 한 번에 $1.50 벌고 $31.51 쓴다. <strong>배달 한 번마다 30달러를 까먹는 구조</strong>다.</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" ></span><span class="mord text"><span class="mord">Profit/run</span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord mathnormal" >R</span><span class="mspace" ></span><span class="mbin">−</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord"><span class="mord mathnormal" >C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" ><span ><span class="pstrut" ></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">run</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" ><span></span></span></span></span></span></span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">$1.501</span><span class="mspace" ></span><span class="mbin">−</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">$31.51</span><span class="mspace" ></span><span class="mrel">=</span><span class="mspace" ></span></span><span class="base"><span class="strut" ></span><span class="mord">−</span><span class="mord">$30.009</span></span></span></span></span></p>
+<p>손익분기점은 당연히 존재하지 않는다. 배달을 하면 할수록 적자가 쌓인다. 1,000번 배달하면 누적 손실이 $57,836($27,827 + $30.009 × 1,000)이다. <del>배달 안 하는 게 최선의 경영 전략</del></p>
+<h3 id="63-비용-구조-분석">6.3. 비용 구조 분석</h3>
+<p>운영 비용 $31.51의 구성을 따져보면 진범이 보인다.</p>
+<div ><table><thead><tr><th>항목</th><th>비용</th><th>비중</th></tr></thead><tbody><tr><td>에너지</td><td>$0.11</td><td>0.3%</td></tr><tr><td>유지보수</td><td>$31.40</td><td><strong>99.7%</strong></td></tr></tbody></table></div><p>에너지 비용은 전체의 0.3%에 불과하다. 전기세는 사실상 공짜나 다름없다.</p>
+<p><strong>문제는 유지보수다.</strong> 운영 비용의 99.7%가 충돌로 인한 유지보수비다. 충돌률 54%, 평균 충격량 501.7 N·s가 합쳐져서 매번 $31.40의 수리비가 발생한다. 에너지 효율을 아무리 개선해봤자 의미가 없다. 충돌을 줄이는 게 경제성 개선의 유일한 길이다.</p>
+<p>거칠게 비유하면 이런 거다. 택시 기사가 &quot;기름값을 아끼려고 에코 드라이빙을 한다&quot;고 해도 매번 사고를 내서 수리비로 30만 원을 쓴다면, 기름값 절약은 아무 소용이 없다.</p>
+<h3 id="64-손익분기점-분석">6.4. 손익분기점 분석</h3>
+<p>현재 상태에서 손익분기점에 도달하려면 세 가지 중 하나를 해야 한다.</p>
+<ol>
+<li><strong>충돌률을 54%에서 거의 0%로 낮추기</strong>: 유지보수비를 $31.40에서 $1.50 이하로</li>
+<li><strong>SLA 준수율을 43%에서 거의 100%로 올리기</strong>: 수익을 $1.50에서 $3.49로</li>
+<li><strong>위 두 가지를 동시에 개선</strong></li>
+</ol>
+<p>논문에서는 &quot;이론적으로 수익을 낼 수 있는 시나리오&quot;도 계산해뒀다.</p>
+<div ><table><thead><tr><th>시나리오</th><th>충돌률</th><th>SLA 준수율</th><th>유지보수비</th><th>수익</th><th>이익/건</th><th>BEP</th></tr></thead><tbody><tr><td>현재</td><td>54%</td><td>43%</td><td>$31.40</td><td>$1.50</td><td>-$30.01</td><td>없음</td></tr><tr><td>이론적 가능</td><td>5%</td><td>90%</td><td>$2.91</td><td>$3.14</td><td>+$0.12</td><td>~232,000건</td></tr></tbody></table></div><p>충돌률을 5%로 줄이고 SLA 준수율을 90%로 올리면 건당 12센트의 이익이 발생한다. 손익분기점은 약 232,000건. 하루 25건 배달한다고 치면 <strong>25.4년</strong> 걸린다.<sup><a id="footnote-ref-8" href="#footnote-8" data-footnote-ref aria-describedby="footnote-label">8</a></sup> 돈을 벌 수는 있지만, 로봇 수명 2년 안에 본전을 뽑기엔 택도 없다.</p>
+<h3 id="65-기존-지표와의-비교">6.5. 기존 지표와의 비교</h3>
+<p>기존 지표만 보면 그렇게까지 나쁘지 않다. 성공률 43%, 충돌률 54%, 경로 길이 20m. &quot;반 정도는 성공하네&quot; 하고 넘어갈 수 있는 숫자다.</p>
+<p><strong>Table 4. 기존 지표 vs. CostNav 경제 지표</strong></p>
+<div ><table><thead><tr><th>지표</th><th>LB-Local</th></tr></thead><tbody><tr><td><strong>기존 지표</strong></td><td></td></tr><tr><td>성공률 (%)</td><td>43.0</td></tr><tr><td>충돌률 (%)</td><td>54.0</td></tr><tr><td>경로 길이 (m)</td><td>20</td></tr><tr><td><strong>CostNav 경제 지표</strong></td><td></td></tr><tr><td>하드웨어 비용 ($)</td><td>11,589</td></tr><tr><td>학습 비용 ($)</td><td>16,238</td></tr><tr><td>에너지 비용 ($/건)</td><td>0.11</td></tr><tr><td>유지보수 비용 ($/건)</td><td>31.40</td></tr><tr><td>SLA 준수율 (%)</td><td>43.0</td></tr><tr><td>수익 ($/건)</td><td>1.501</td></tr><tr><td><strong>이익 ($/건)</strong></td><td><strong>-30.009</strong></td></tr><tr><td><strong>BEP (건)</strong></td><td><strong>없음</strong></td></tr></tbody></table></div><p>성공률 43%를 경제 지표로 번역하면 &quot;배달 한 번에 30달러 손해&quot;가 된다. 같은 현상을 보고 있지만 해석이 완전히 달라진다. 기존 지표로는 &quot;성능 개선이 필요하다&quot; 정도의 결론이 나오지만, CostNav 지표로는 &quot;이 사업은 현재 상태에서 절대 수익을 낼 수 없다&quot;는 결론이 나온다.</p>
+<h3 id="66-7가지-방법론-비교">6.6. 7가지 방법론 비교</h3>
+<p>논문의 후속 버전(v5)과 GitHub 문서에는 7가지 방법론의 전체 비교 데이터가 공개되어 있다.</p>
+<div ><table><thead><tr><th>방법</th><th>유형</th><th>CAPEX</th><th>OPEX ($/건)</th><th>최적화 타깃</th></tr></thead><tbody><tr><td>Nav2 AMCL</td><td>룰 기반</td><td>$13,000</td><td>$45.57</td><td>비쌈, 충돌 많음</td></tr><tr><td>Nav2 GPS</td><td>룰 기반</td><td>$13,000</td><td>$38.95</td><td>비쌈</td></tr><tr><td>GNM</td><td>학습</td><td>$10,165</td><td>$24.04</td><td>중간</td></tr><tr><td>ViNT</td><td>학습</td><td>$10,165</td><td>$50.87</td><td>보행자 안전 비용 폭발</td></tr><tr><td>NoMaD</td><td>학습</td><td>$10,165</td><td>$32.12</td><td>재산 피해 높음</td></tr><tr><td><strong>NavDP</strong></td><td><strong>학습</strong></td><td><strong>$10,165</strong></td><td><strong>$15.75</strong></td><td><strong>가장 저렴</strong></td></tr><tr><td>CANVAS</td><td>학습</td><td>$12,165</td><td>$30.85</td><td>GPS 추가 비용</td></tr></tbody></table></div><p>NavDP가 건당 운영비 $15.75로 가장 효율적이다. 그래도 배달 수수료 $3.49보다 훨씬 비싸니 흑자는 어림없지만. <del>최악 중의 최선</del></p>
+<p>반면 ViNT는 $50.87로 가장 비쌌다. 보행자 안전 비용이 $29.89나 돼서 그렇다. 트랜스포머 구조의 네비게이션이 기술적으로는 우아하지만, 보행자 근처에서의 행동이 경제적으로는 최악이었다.</p>
+<h2 id="7-의의-및-한계">7. 의의 및 한계</h2>
+<p><strong>의의</strong></p>
+<p>CostNav가 처음으로 보여준 것은 명확하다. <strong>네비게이션 연구의 성공 지표와 사업의 성공 지표는 다르다.</strong> 성공률을 올리는 것과 돈을 버는 것은 별개 문제다.</p>
+<p>구체적 기여를 꼽으면:</p>
+<ul>
+<li>업계 실제 데이터(전기요금, 배달 수수료, 하드웨어 가격)에 기반한 현실적 비용 모델</li>
+<li>배달 수수료와 SLA를 반영한 수익 모델</li>
+<li>손익분기점 분석으로 &quot;언제 흑자 전환하느냐&quot;를 직접 계산</li>
+<li>벤치마크, 비용 모델, 시뮬레이션, 학습된 정책 전부 오픈소스로 공개</li>
+</ul>
+<p><strong>한계</strong></p>
+<p>솔직히 한계도 뚜렷하다.</p>
+<ul>
+<li><strong>단일 베이스라인</strong>: 초기 버전은 학습 기반 온디바이스 방법 하나만 깊이 분석했다. 이후 버전에서 7가지로 확장했지만 아직 충분하지 않다</li>
+<li><strong>Level 1, 2만 평가</strong>: 악천후, 야간, 오래된 지도 같은 Level 3 시나리오는 아직이다</li>
+<li><strong>선형 스케일링 가정</strong>: 20m 실험을 6km로 단순 비례 환산했는데, 현실에서는 비선형적 요소가 많다</li>
+<li><strong>음식 상태 미반영</strong>: SLA에 음식 상태(food intactness)를 아직 반영하지 않았다. 팝콘 물리 시뮬레이션까지 해놓고 아직 비용 모델에 통합 안 한 건 좀 아쉽다</li>
+<li><strong>단일 로봇 가정</strong>: 실제 배달 서비스는 수십에서 수백 대를 운영하는데, 플릿 관리 비용은 빠져 있다</li>
+<li><strong>인건비 제외</strong>: Level 1, 2에서는 이상적 감독 환경을 가정해서 원격 조종자 인건비($C_{\text{rescue}}$)를 0으로 뒀다</li>
+</ul>
+<h2 id="8-여담">8. 여담</h2>
+<ul>
+<li><p>CostNav는 <strong>CES 2026</strong>에서 발표되었다. 학회가 아니라 전자제품 박람회에서 발표한 게 의미심장하다. 이 연구가 학계뿐 아니라 산업계를 겨냥하고 있다는 뜻이다. MAUM.AI의 WoRV 팀은 한화로보틱스와 협력해서 Physical AI 제품을 개발 중이기도 하다.</p>
+</li>
+<li><p>논문에서 사용한 배달 수수료 <strong>$3.49</strong>는 Starship Technologies의 실제 서비스 가격이다. 사우스캐롤라이나 대학교에서는 Grubhub과 Starship이 제휴해서 캠퍼스 내 로봇 배달 서비스를 운영하고 있다. <del>대학생들이 로봇한테 배달시키는 시대</del></p>
+</li>
+<li><p>&quot;충돌률 54%&quot;라는 숫자가 비현실적으로 높아 보일 수 있지만, 실제로 <strong>시카고에서 배달 로봇이 일주일에 두 번이나 버스 정류장 유리를 박살낸 사건</strong>이 2026년 3월에 발생했다. Serve Robotics와 Coco Robotics의 로봇이 각각 범인이었다. 시카고 시의원은 &quot;일주일에 두 번은 좀 심하다&quot;(Two in seven days is not great)고 논평했다. 3,600명 이상의 시민이 인도 로봇 금지 청원에 서명한 상태다.</p>
+</li>
+<li><p>로스앤젤레스에서는 <strong>뇌성마비 장애인이 Serve Robotics 배달 로봇과 충돌</strong>한 사건도 있었다. 인도에서 로봇을 추월하려 했는데 로봇이 계속 진로를 막아서 결국 부딪혔다고 한다. 접근성 옹호 단체들은 배달 로봇이 휠체어 사용자와 시각장애인에게 새로운 장애물이 된다고 지적한다. CostNav가 보행자 안전 비용을 AIS 기반으로 계산한 건 이런 현실을 반영한 거다.</p>
+</li>
+<li><p>CostNav에서 <strong>팝콘 물리 시뮬레이션</strong>을 넣은 건 꽤 인상적이다. 로봇이 급회전하거나 충돌할 때 적재함 안의 음식이 얼마나 쏟아지는지를 물리 엔진으로 시뮬레이션한다. 아직 비용 모델에 통합하진 않았지만, 향후 &quot;음식 상태 기반 SLA&quot;를 도입할 때 쓸 데이터를 미리 쌓고 있는 셈이다.</p>
+</li>
+<li><p>논문의 저자가 <strong>23명</strong>이다. Technical Report치고는 대규모 팀인데, MAUM.AI의 WoRV(World Model for Robotics and Vehicle Control) 팀 소속이 대부분이고, 서울대학교의 Youngjae Yu 교수가 공동 교신저자로 참여했다. WoRV 팀은 CostNav 외에도 <a href="https://arxiv.org/abs/2410.10862">CANVAS</a>(상식 기반 네비게이션)와 <a href="https://worv-ai.github.io/d2e/">D2E</a>(데스크톱 데이터로 비전-액션 사전학습) 등을 발표하며 Embodied AI 분야에서 활발히 활동 중이다.</p>
+</li>
+<li><p>Starship Technologies는 2024년 2월에 9,000만 달러 투자를 유치하면서 600만 건 배달 돌파를 발표했고, 2025년 10월에는 5,000만 달러를 추가로 모았다. 누적 투자 2억 8,000만 달러. &quot;이미 수익성을 달성했다&quot;고 주장하는데, CostNav의 분석 결과와 대조하면 재미있다. Starship이 수천 대 규모의 플릿 운영과 수년간의 데이터 축적으로 충돌률을 극도로 낮춘 덕분일 것이다. <del>결국 답은 &quot;충돌하지 마라&quot;</del></p>
+</li>
+<li><p>GitHub 리포지토리의 커밋 수가 628개에 달하고, Docker 지원, ROS2 연동, 텔레오퍼레이션 가이드까지 갖추고 있다. 벤치마크치고는 상당히 공을 들인 오픈소스 프로젝트다.</p>
+</li>
+</ul>
+<h2 id="9-참고-문헌-및-외부-링크">9. 참고 문헌 및 외부 링크</h2>
+<ul>
+<li><a href="https://arxiv.org/abs/2511.20216">CostNav 논문 (arXiv)</a></li>
+<li><a href="https://github.com/worv-ai/CostNav">CostNav GitHub</a></li>
+<li><a href="https://worv-ai.github.io/CostNav/">CostNav 공식 문서</a></li>
+<li><a href="https://worv-ai.github.io/CostNav/cost_model/">CostNav 비용 모델 상세</a></li>
+<li><a href="https://worv.ghost.io/costnav-2/">WoRV Tech Blog: CostNav 소개</a></li>
+<li><a href="https://www.starship.xyz/">Starship Technologies 공식 사이트</a></li>
+<li><a href="https://restauranttechnologynews.com/2025/10/starship-technologies-boosts-restaurant-delivery-automation-with-50-million-to-expand-robot-fleet-across-the-u-s/">Starship $50M 투자 유치 (2025)</a></li>
+<li><a href="https://www.pymnts.com/partnerships/2025/uber-eats-and-starship-to-launch-autonomous-sidewalk-robot-delivery-in-december/">Uber Eats × Starship 자율 배달 제휴</a></li>
+<li><a href="https://www.cbsnews.com/chicago/news/delivery-robot-crashes-into-west-town-bus-shelter/">시카고 배달 로봇 버스 정류장 충돌 사건</a></li>
+<li><a href="https://isaac-sim.github.io/IsaacLab/">NVIDIA Isaac Lab</a></li>
+<li><a href="https://robotics.segway.com/">Segway Robotics</a></li>
+<li><a href="https://www.businesskorea.co.kr/news/articleView.html?idxno=255128">MAUM.AI × 한화로보틱스 Physical AI 제휴</a></li>
+</ul>
+<section class="footnotes" data-footnotes>
+<h2 id="footnote-label" class="sr-only">Footnotes</h2>
+<ol>
+<li id="footnote-1">
+<p>MAUM.AI는 한국의 AI 플랫폼 기업으로, WoRV(World Model for Robotics and Vehicle Control) 팀이 Embodied AI 연구를 주도하고 있다. <a href="#footnote-ref-1" data-footnote-backref aria-label="Back to reference 1">↩</a></p>
+</li>
+<li id="footnote-2">
+<p>Habitat (Savva et al., 2019), Gibson (Xia et al., 2018), CARLA (Dosovitskiy et al., 2017), Urban-Sim (Wu et al., 2025) 등이 대표적이다. <a href="#footnote-ref-2" data-footnote-backref aria-label="Back to reference 2">↩</a></p>
+</li>
+<li id="footnote-3">
+<p>시뮬레이션에서의 평균 배달 시간은 0.1시간이지만, 현실 시나리오(6km 배달)에서는 1시간으로 스케일링한다. 전기요금은 미국 상업용 요율 $0.20/kWh 적용. <a href="#footnote-ref-3" data-footnote-backref aria-label="Back to reference 3">↩</a></p>
+</li>
+<li id="footnote-4">
+<p>2026년 3월, Serve Robotics와 Coco Robotics의 배달 로봇이 각각 시카고 버스 정류장 유리를 박살냈다. 지역 시의원의 &quot;일주일에 두 번은 좀 심하다&quot; 코멘트는 언론에 두고두고 인용되었다. <a href="#footnote-ref-4" data-footnote-backref aria-label="Back to reference 4">↩</a></p>
+</li>
+<li id="footnote-5">
+<p>수학적으로, 분모(R - C_run)가 음수이면 BEP = 양수/음수 = 음수가 되는데, &quot;마이너스 배달 횟수&quot;라는 건 물리적으로 불가능하므로 &quot;손익분기점 없음&quot;으로 처리한다. <a href="#footnote-ref-5" data-footnote-backref aria-label="Back to reference 5">↩</a></p>
+</li>
+<li id="footnote-6">
+<p>NVIDIA Isaac Sim의 물리 엔진으로 팝콘 입자 하나하나의 운동을 시뮬레이션한다. GPU가 팝콘 튀기는 시뮬레이션을 하고 있다고 생각하면 된다. <a href="#footnote-ref-6" data-footnote-backref aria-label="Back to reference 6">↩</a></p>
+</li>
+<li id="footnote-7">
+<p>CANVAS는 CostNav와 같은 WoRV 팀의 작품이다. 자기 팀 방법론을 자기 팀 벤치마크에 넣었으니 이해충돌 아니냐 싶겠지만, 다른 5가지 방법론과 동등하게 비교하고 있고 CANVAS가 1등도 아니니 공정성에는 문제없어 보인다. <a href="#footnote-ref-7" data-footnote-backref aria-label="Back to reference 7">↩</a></p>
+</li>
+<li id="footnote-8">
+<p>하루 25건 × 365일 = 연간 9,125건. 232,000 / 9,125 ≈ 25.4년. 로봇 수명이 2년인 걸 감안하면 로봇을 12.7번 교체해야 한다는 뜻인데, 교체 비용을 더하면 영원히 본전을 못 뽑는다. <a href="#footnote-ref-8" data-footnote-backref aria-label="Back to reference 8">↩</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+    
+    
+  </div>
+
+  <div class="wiki-footer">
+    <p>Generated by <a href="https://github.com/hletrd/kiwi-paper">kiwi-paper</a></p>
+  </div>
+</div>
+
+<div class="settings-overlay" aria-hidden="true"></div>
+<div class="settings-panel" aria-hidden="true">
+  <div class="settings-header">
+    <span class="settings-title">디스플레이 설정</span>
+    <button class="settings-close" aria-label="닫기">&times;</button>
+  </div>
+  <div class="settings-body">
+    <div class="settings-group">
+      <div class="settings-group-title">테마</div>
+      <div class="settings-radio-group" data-setting="theme">
+        <label><input type="radio" name="theme" value="auto" checked> 자동 (시스템 설정)</label>
+        <label><input type="radio" name="theme" value="light"> 라이트</label>
+        <label><input type="radio" name="theme" value="dark"> 다크</label>
+        <label><input type="radio" name="theme" value="black"> 검은 화면 (AMOLED)</label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">취소선</div>
+      <div class="settings-toggle-row">
+        <span>보이기</span>
+        <label class="toggle"><input type="checkbox" data-setting="show-del" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">각주 표시 형식</div>
+      <div class="settings-radio-group" data-setting="fn-mode">
+        <label><input type="radio" name="fn-mode" value="popover" checked> 팝오버</label>
+        <label><input type="radio" name="fn-mode" value="inline"> 인라인</label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">이미지</div>
+      <div class="settings-toggle-row">
+        <span>보이기</span>
+        <label class="toggle"><input type="checkbox" data-setting="show-images" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">글자 크기</div>
+      <div class="settings-radio-group" data-setting="font-size">
+        <label><input type="radio" name="font-size" value="default" checked> 기본</label>
+        <label><input type="radio" name="font-size" value="small"> 작게</label>
+        <label><input type="radio" name="font-size" value="large"> 크게</label>
+        <label><input type="radio" name="font-size" value="xlarge"> 매우 크게</label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">문단 접기</div>
+      <div class="settings-toggle-row">
+        <span>문단을 기본으로 접기</span>
+        <label class="toggle"><input type="checkbox" data-setting="fold-sections"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">표</div>
+      <div class="settings-toggle-row">
+        <span>표 워드랩 사용</span>
+        <label class="toggle"><input type="checkbox" data-setting="table-wrap" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">외부 링크</div>
+      <div class="settings-toggle-row">
+        <span>외부 링크 아이콘 표시</span>
+        <label class="toggle"><input type="checkbox" data-setting="ext-link-icon" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-title">목차</div>
+      <div class="settings-toggle-row">
+        <span>목차 지도 활성화</span>
+        <label class="toggle"><input type="checkbox" data-setting="toc-map" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="toc-fab" aria-label="목차" style="display:none">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+</button>
+<div class="toc-overlay" aria-hidden="true"></div>
+
+<script>
+(function() {
+  var panel = document.querySelector('.settings-panel');
+  var overlay = document.querySelector('.settings-overlay');
+  var toggleBtn = document.querySelector('.settings-toggle');
+  var closeBtn = document.querySelector('.settings-close');
+  if (!panel || !toggleBtn) return;
+
+  function openPanel() { panel.classList.add('open'); overlay.classList.add('open'); }
+  function closePanel() { panel.classList.remove('open'); overlay.classList.remove('open'); }
+  toggleBtn.addEventListener('click', function() { panel.classList.contains('open') ? closePanel() : openPanel(); });
+  overlay.addEventListener('click', closePanel);
+  if (closeBtn) closeBtn.addEventListener('click', closePanel);
+
+  // --- Settings persistence ---
+  var STORE_KEY = 'kiwi-paper-settings';
+  var defaults = {
+    theme: 'auto',
+    'show-del': true,
+    'fn-mode': 'popover',
+    'show-images': true,
+    'font-size': 'default',
+    'fold-sections': false,
+    'table-wrap': true,
+    'ext-link-icon': true,
+    'toc-map': true
+  };
+
+  function loadSettings() {
+    try { return Object.assign({}, defaults, JSON.parse(localStorage.getItem(STORE_KEY))); }
+    catch(e) { return Object.assign({}, defaults); }
+  }
+  function saveSettings(s) { localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
+
+  var settings = loadSettings();
+
+  function applyTheme(theme) {
+    if (theme === 'auto') {
+      var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+  }
+
+  function applyAll() {
+    applyTheme(settings.theme);
+    document.body.classList.toggle('hide-del', !settings['show-del']);
+    document.body.classList.toggle('hide-images', !settings['show-images']);
+    document.body.classList.toggle('no-table-wrap', !settings['table-wrap']);
+    document.body.classList.toggle('no-ext-icon', !settings['ext-link-icon']);
+    document.body.classList.toggle('fold-sections', settings['fold-sections']);
+    document.body.classList.toggle('fn-inline', settings['fn-mode'] === 'inline');
+    document.body.classList.toggle('no-toc-map', !settings['toc-map']);
+    updateFolding();
+    document.body.classList.remove('font-small', 'font-large', 'font-xlarge');
+    if (settings['font-size'] !== 'default') document.body.classList.add('font-' + settings['font-size']);
+
+    // Sync UI
+    panel.querySelectorAll('input[type=radio]').forEach(function(r) {
+      var key = r.name;
+      r.checked = (settings[key] === r.value);
+    });
+    panel.querySelectorAll('input[type=checkbox]').forEach(function(c) {
+      var key = c.getAttribute('data-setting');
+      if (key && settings[key] !== undefined) c.checked = settings[key];
+    });
+  }
+
+  // Radio inputs
+  panel.querySelectorAll('input[type=radio]').forEach(function(r) {
+    r.addEventListener('change', function() {
+      settings[r.name] = r.value;
+      saveSettings(settings);
+      applyAll();
+    });
+  });
+
+  // Toggle inputs
+  panel.querySelectorAll('input[type=checkbox]').forEach(function(c) {
+    c.addEventListener('change', function() {
+      var key = c.getAttribute('data-setting');
+      if (key) { settings[key] = c.checked; saveSettings(settings); applyAll(); }
+    });
+  });
+
+  // System theme change listener
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+    if (settings.theme === 'auto') applyTheme('auto');
+  });
+
+  // Populate footnote inline text (for inline mode)
+  document.querySelectorAll('.footnote-ref').forEach(function(ref) {
+    var link = ref.querySelector('a');
+    if (!link) return;
+    var id = link.getAttribute('href')?.replace('#', '');
+    var fn = document.getElementById(id);
+    if (fn) {
+      var text = fn.textContent?.replace(/\s+/g, ' ').replace(/↩$/, '').trim();
+      if (text) ref.setAttribute('data-fn-text', text);
+    }
+  });
+
+  // Footnote popover — single element, created once and reused
+  var pop = document.createElement('div');
+  pop.className = 'fn-popover';
+  pop.style.position = 'absolute';
+  pop.style.display = 'none';
+  document.body.appendChild(pop);
+
+  document.querySelectorAll('.footnote-ref a').forEach(function(a) {
+    a.addEventListener('mouseenter', function() {
+      if (settings['fn-mode'] !== 'popover') return;
+      var id = a.getAttribute('href')?.replace('#', '');
+      var fn = document.getElementById(id);
+      if (!fn) return;
+      pop.textContent = fn.textContent;
+      pop.style.display = '';
+      var rect = a.getBoundingClientRect();
+      pop.style.left = (rect.left + window.scrollX) + 'px';
+      pop.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+      var popRect = pop.getBoundingClientRect();
+      if (popRect.right > window.innerWidth) {
+        pop.style.left = (window.innerWidth - popRect.width - 8 + window.scrollX) + 'px';
+      }
+      if (popRect.bottom > window.innerHeight) {
+        pop.style.top = (rect.top + window.scrollY - popRect.height - 4) + 'px';
+      }
+    });
+    a.addEventListener('mouseleave', function() {
+      pop.style.display = 'none';
+    });
+  });
+
+  // Namu.wiki heading number links — click number to jump to TOC
+  var wikiArticle = document.querySelector('.wiki-article');
+  if (wikiArticle) {
+    wikiArticle.querySelectorAll('h2, h3, h4, h5, h6').forEach(function(h) {
+      var m = h.innerHTML.match(/^([\d]+(?:\.[\d]+)*\.)[\s]+/);
+      if (m) {
+        h.innerHTML = '<a href="#toc" class="wiki-heading-num">' + m[1] + '</a> ' + h.innerHTML.slice(m[0].length);
+      }
+    });
+  }
+
+  // Section folding — namu.wiki-style per-section [접기]/[펼치기]
+  function updateSingleFold(h2) {
+    var folded = h2.classList.contains('folded');
+    var btn = h2.querySelector('.wiki-fold-btn');
+    if (btn) btn.textContent = folded ? '[펼치기]' : '[접기]';
+    var next = h2.nextElementSibling;
+    while (next && next.tagName !== 'H2' && next.tagName !== 'H1') {
+      if (!next.classList.contains('wiki-toc') && !next.classList.contains('wiki-related') && !next.classList.contains('page-nav')) {
+        next.style.display = folded ? 'none' : '';
+      }
+      next = next.nextElementSibling;
+    }
+  }
+
+  function updateFolding() {
+    var article = document.querySelector('.wiki-article');
+    if (!article) return;
+    var foldAll = settings['fold-sections'];
+    article.querySelectorAll(':scope > h2').forEach(function(h2) {
+      if (foldAll) h2.classList.add('folded');
+      else h2.classList.remove('folded');
+      updateSingleFold(h2);
+    });
+  }
+
+  document.querySelectorAll('.wiki-article > h2').forEach(function(h) {
+    var btn = document.createElement('span');
+    btn.className = 'wiki-fold-btn';
+    btn.textContent = '[접기]';
+    btn.setAttribute('role', 'button');
+    btn.setAttribute('tabindex', '0');
+    h.appendChild(btn);
+
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      h.classList.toggle('folded');
+      updateSingleFold(h);
+    });
+  });
+
+  applyAll();
+})();
+</script>
+<script>
+(function() {
+  var toc = document.querySelector('.wiki-toc');
+  var fab = document.querySelector('.toc-fab');
+  var overlay = document.querySelector('.toc-overlay');
+  if (!toc || !fab) return;
+
+  function openToc() { toc.classList.add('open'); overlay.classList.add('open'); }
+  function closeToc() { toc.classList.remove('open'); overlay.classList.remove('open'); }
+
+  fab.addEventListener('click', function() {
+    toc.classList.contains('open') ? closeToc() : openToc();
+  });
+  overlay.addEventListener('click', closeToc);
+
+  // Close on entry click (mobile)
+  toc.querySelectorAll('.toc-entry a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      if (window.innerWidth <= 768) closeToc();
+    });
+  });
+
+  // IntersectionObserver for active section
+  var entries = toc.querySelectorAll('.toc-entry');
+  var observed = [];
+  entries.forEach(function(entry) {
+    var href = entry.querySelector('a').getAttribute('href');
+    if (href && href.startsWith('#')) {
+      var el = document.getElementById(href.slice(1));
+      if (el) observed.push({ el: el, entry: entry });
+    }
+  });
+  if (observed.length === 0) return;
+
+  var current = null;
+  var observer = new IntersectionObserver(function(items) {
+    items.forEach(function(item) {
+      if (item.isIntersecting) {
+        var match = observed.find(function(o) { return o.el === item.target; });
+        if (match) {
+          if (current) current.classList.remove('active');
+          match.entry.classList.add('active');
+          current = match.entry;
+        }
+      }
+    });
+  }, { rootMargin: '-5% 0px -85% 0px', threshold: 0 });
+
+  observed.forEach(function(o) { observer.observe(o.el); });
+})();
+</script>
+</body>
+</html>
