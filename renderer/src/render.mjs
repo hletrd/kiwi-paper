@@ -18,6 +18,7 @@ import { markedHighlight } from 'marked-highlight';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 import { createHighlighter } from 'shiki';
 import { renderPage, renderIndexPage } from './template.mjs';
+import { escapeHtml, safeHref, sanitizeRawHtml } from './sanitize.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -87,7 +88,7 @@ async function main() {
 
       if (sections.length > 1) {
         for (const sec of sections) {
-          const secHtml = sanitizeHtml(await marked.parse(sec.content));
+          const secHtml = await marked.parse(sec.content);
           const secHeadings = extractHeadings(secHtml);
           const outName = sec.slug + '.html';
           rendered.push({
@@ -103,7 +104,7 @@ async function main() {
       }
     }
 
-    const html = sanitizeHtml(await marked.parse(processedMd));
+    const html = await marked.parse(processedMd);
     const headings = extractHeadings(html);
     const outName = file.name.replace(/\.md$/i, '.html');
     rendered.push({ title, html, headings, outName, srcName: file.name });
@@ -540,15 +541,17 @@ async function initMarked() {
     }),
   );
 
-  // Custom renderer: .md links → .html, wrap tables for overflow
+  // Custom renderer: sanitize raw HTML, .md links → .html, wrap tables for overflow
   marked.use({
     renderer: {
+      html({ text }) {
+        return sanitizeRawHtml(text);
+      },
       link({ href, title, tokens }) {
         const text = this.parser.parseInline(tokens);
         const resolvedHref = href && href.endsWith('.md') ? href.replace(/\.md$/, '.html') : href;
-        const safeHref = escHtml(isSafeHref(resolvedHref));
-        const titleAttr = title ? ` title="${escHtml(title)}"` : '';
-        return `<a href="${safeHref}"${titleAttr}>${text}</a>`;
+        const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+        return `<a href="${escapeHtml(safeHref(resolvedHref))}"${titleAttr}>${text}</a>`;
       },
       table({ header, rows }) {
         // Use default table rendering but wrapped for scroll
@@ -574,11 +577,11 @@ async function initMarked() {
         return `<div style="overflow-x:auto"><table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
       },
       image({ href, title, text }) {
-        const safeHref = href ? escHtml(isSafeHref(href)) : '';
-        const altText = text ? escHtml(text) : '';
-        const titleAttr = title ? ` title="${escHtml(title)}"` : '';
-        const caption = text ? `<figcaption>${escHtml(text)}</figcaption>` : '';
-        return `<figure class="wiki-figure"><img src="${safeHref}" alt="${altText}"${titleAttr} loading="lazy">${caption}</figure>`;
+        const src = escapeHtml(safeHref(href));
+        const altText = text ? escapeHtml(text) : '';
+        const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+        const caption = text ? `<figcaption>${escapeHtml(text)}</figcaption>` : '';
+        return `<figure class="wiki-figure"><img src="${src}" alt="${altText}"${titleAttr} loading="lazy">${caption}</figure>`;
       },
     },
   });
@@ -608,69 +611,6 @@ function extractHeadings(html) {
     headings.push({ id, text, level });
   }
   return headings;
-}
-
-// ---------------------------------------------------------------------------
-// HTML sanitization — strip dangerous tags and event handler attributes
-// ---------------------------------------------------------------------------
-function sanitizeHtml(html) {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
-    .replace(/<object[\s\S]*?<\/object>/gi, '')
-    .replace(/<embed[\s\S]*?<\/embed>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<form[\s\S]*?<\/form>/gi, '')
-    .replace(/<svg[\s\S]*?<\/svg>/gi, '')
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, '')
-    .replace(/<(script|iframe|object|embed|style|form|svg|link|meta|base|noscript|template)[^>]*\/?>/gi, '')
-    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
-    // Strip javascript:/vbscript:/data: from href, src, action, formaction attributes
-    .replace(/\b(href|src|action|formaction)\s*=\s*"[^"]*?\b(javascript|vbscript)\s*:[^"]*"/gi, '')
-    .replace(/\b(href|src|action|formaction)\s*=\s*'[^']*?\b(javascript|vbscript)\s*:[^']*'/gi, '')
-    .replace(/\b(href|src|action|formaction)\s*=\s*(?:javascript|vbscript)\s*:[^\s>]*/gi, '')
-    // Strip style attributes from raw HTML
-    .replace(/\bstyle\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
-    // Strip ping attribute (no legitimate use)
-    .replace(/\bping\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
-    // Entity-aware URI scheme check for all URL-accepting attributes
-    .replace(/\b(href|src|action|formaction|poster|background|lowsrc|dynsrc|ping|xlink:href)\s*=\s*("[^"]*"|'[^']*')/gi, (match, attr, val) => {
-      const q = val[0];
-      const inner = val.slice(1, -1);
-      const decoded = inner
-        .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
-        .replace(/&#(\d+);?/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
-        .replace(/&amp;/gi, '&')
-        .replace(/\s+/g, '')
-        .toLowerCase();
-      if (/^(javascript|vbscript|data)\s*:/.test(decoded)) return '';
-      return match;
-    });
-}
-
-// ---------------------------------------------------------------------------
-// URI scheme safety check — blocks javascript:, vbscript:, data:text/html, file:
-// ---------------------------------------------------------------------------
-function isSafeHref(href) {
-  if (!href) return '';
-  const trimmed = href.trim().toLowerCase();
-  if (trimmed.startsWith('javascript:') || trimmed.startsWith('vbscript:') ||
-      trimmed.startsWith('data:') || trimmed.startsWith('blob:') || trimmed.startsWith('file:')) {
-    return '';
-  }
-  return href;
-}
-
-// ---------------------------------------------------------------------------
-// HTML escaping for safe attribute/content interpolation
-// ---------------------------------------------------------------------------
-function escHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 function extractTitle(md) {

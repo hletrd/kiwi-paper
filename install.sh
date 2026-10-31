@@ -24,8 +24,7 @@ copy_skill_files() {
     else
       echo "  ⚠ Warning: renderer/package-lock.json not found, skipping"
     fi
-    cp "$SCRIPT_DIR/renderer/src/render.mjs" "$dest/renderer/src/render.mjs"
-    cp "$SCRIPT_DIR/renderer/src/template.mjs" "$dest/renderer/src/template.mjs"
+    cp "$SCRIPT_DIR"/renderer/src/*.mjs "$dest/renderer/src/"
   fi
   # Copy examples
   if [ -d "$SCRIPT_DIR/examples" ]; then

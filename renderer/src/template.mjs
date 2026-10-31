@@ -4,6 +4,7 @@
  */
 
 import { createHash } from 'node:crypto';
+import { escapeHtml } from './sanitize.mjs';
 
 /**
  * @param {object} opts
@@ -63,7 +64,7 @@ ${shikiCss ? `<style>${shikiCss}</style>` : ''}
 <div class="wiki-wrapper">
   <div class="wiki-header">
     <div class="wiki-header-inner">
-      <a class="wiki-logo" href="${navigation.index || '#'}">🥝 kiwi-paper</a>
+      <a class="wiki-logo" href="${escapeHtml(navigation.index || '#')}">🥝 kiwi-paper</a>
       <button class="settings-toggle" aria-label="디스플레이 설정" title="디스플레이 설정">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
@@ -197,15 +198,6 @@ export function renderIndexPage({ title, documents, katexCss = '', shikiCss = ''
     katexCss,
     shikiCss,
   });
-}
-
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 function buildToc(headings) {
@@ -500,12 +492,15 @@ pre code {
   font-size: 15px;
 }
 
-/* Shiki dual theme */
-.shiki-light { display: block; }
-.shiki-dark { display: none; }
-[data-theme="dark"] .shiki-light, [data-theme="black"] .shiki-light { display: none; }
-[data-theme="dark"] .shiki-dark, [data-theme="black"] .shiki-dark { display: block; }
-pre.shiki { border: 1px solid var(--border); border-radius: var(--radius); }
+/* Shiki dual theme: light colors inline, dark colors in --shiki-dark* variables */
+pre.shiki { background-color: var(--bg-code) !important; }
+[data-theme="dark"] .shiki, [data-theme="dark"] .shiki span,
+[data-theme="black"] .shiki, [data-theme="black"] .shiki span {
+  color: var(--shiki-dark) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}
 
 /* --- Tables (namu.wiki: tight cells, thin borders) --- */
 table {

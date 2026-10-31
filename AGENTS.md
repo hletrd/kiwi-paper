@@ -43,9 +43,11 @@ kiwi-paper/
 │   └── attention-is-all-you-need.md  # 예제 출력
 └── renderer/          # Markdown → HTML 렌더러
     ├── package.json   # ESM 패키지 (Node.js >= 22.12)
-    └── src/
-        ├── render.mjs    # CLI 엔트리 포인트
-        └── template.mjs  # HTML 템플릿 (CSS/JS 인라인)
+    ├── src/
+    │   ├── render.mjs    # CLI 엔트리 포인트
+    │   ├── sanitize.mjs  # 이스케이프, URL 스킴 검사, raw HTML 화이트리스트 정화
+    │   └── template.mjs  # HTML 템플릿 (CSS/JS 인라인)
+    └── test/             # node:test 단위 테스트 (`npm test`)
 ```
 
 ## 에이전트별 작업 가이드
@@ -56,7 +58,8 @@ kiwi-paper/
 2. 엔트리 포인트: `renderer/src/render.mjs` — CLI (`-i`, `-o` 필수 옵션)
 3. 템플릿: `renderer/src/template.mjs` — `renderPage()`, `renderIndexPage()` export
 4. 의존성 변경 시 `cd renderer && npm install` 필요
-5. 테스트: `node renderer/src/render.mjs -i examples/ -o dist/`
+5. 테스트: `cd renderer && npm test` (단위 테스트), `node renderer/src/render.mjs -i examples/ -o dist/` (렌더링 확인)
+6. 보안: 마크다운 안의 raw HTML만 신뢰하지 않는다. `renderer.html`에서 `sanitizeRawHtml()`로 정화하고, KaTeX나 Shiki 출력은 인라인 스타일이 필요하므로 페이지 전체를 정규식으로 거르지 않는다
 
 CLI 인터페이스:
 ```

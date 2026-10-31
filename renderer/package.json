@@ -7,7 +7,8 @@
     "kiwi-render": "./src/render.mjs"
   },
   "scripts": {
-    "render": "node src/render.mjs"
+    "render": "node src/render.mjs",
+    "test": "node --test"
   },
   "dependencies": {
     "commander": "^15.0.0",
