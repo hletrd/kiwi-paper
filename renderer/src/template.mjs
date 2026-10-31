@@ -41,7 +41,7 @@ export function renderPage({
     return createHash('sha256').update(content, 'utf8').digest('base64');
   }
 
-  const scriptHashes = [`'sha256-${sha256(settingsJs)}'`];
+  const scriptHashes = [`'sha256-${sha256(THEME_SCRIPT)}'`, `'sha256-${sha256(settingsJs)}'`];
   if (tocJs) scriptHashes.push(`'sha256-${sha256(tocJs)}'`);
   const cspScriptSrc = scriptHashes.join(' ');
 
@@ -54,6 +54,7 @@ export function renderPage({
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta name="referrer" content="no-referrer">
 <title>${escapeHtml(title)}</title>
+<script>${THEME_SCRIPT}</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 ${katexCss ? `<style>${katexCss}</style>` : ''}
@@ -969,6 +970,16 @@ const TOC_SCRIPT = `
 
 function getTocScript() { return TOC_SCRIPT; }
 
+// Runs in <head> so the saved or system theme applies before first paint
+const THEME_SCRIPT = `
+(function() {
+  var theme;
+  try { theme = JSON.parse(localStorage.getItem('kiwi-paper-settings') || '{}').theme; } catch (e) {}
+  if (!theme || theme === 'auto') theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+`;
+
 const SETTINGS_SCRIPT = `
 (function() {
   var panel = document.querySelector('.settings-panel');
@@ -1001,7 +1012,9 @@ const SETTINGS_SCRIPT = `
     try { return Object.assign({}, defaults, JSON.parse(localStorage.getItem(STORE_KEY))); }
     catch(e) { return Object.assign({}, defaults); }
   }
-  function saveSettings(s) { localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
+  function saveSettings(s) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch (e) {}
+  }
 
   var settings = loadSettings();
 
@@ -1023,7 +1036,6 @@ const SETTINGS_SCRIPT = `
     document.body.classList.toggle('fold-sections', settings['fold-sections']);
     document.body.classList.toggle('fn-inline', settings['fn-mode'] === 'inline');
     document.body.classList.toggle('no-toc-map', !settings['toc-map']);
-    updateFolding();
     document.body.classList.remove('font-small', 'font-large', 'font-xlarge');
     if (settings['font-size'] !== 'default') document.body.classList.add('font-' + settings['font-size']);
 
@@ -1051,7 +1063,12 @@ const SETTINGS_SCRIPT = `
   panel.querySelectorAll('input[type=checkbox]').forEach(function(c) {
     c.addEventListener('change', function() {
       var key = c.getAttribute('data-setting');
-      if (key) { settings[key] = c.checked; saveSettings(settings); applyAll(); }
+      if (!key) return;
+      settings[key] = c.checked;
+      saveSettings(settings);
+      applyAll();
+      // Only the fold setting resets per-section folds
+      if (key === 'fold-sections') updateFolding();
     });
   });
 
@@ -1127,7 +1144,10 @@ const SETTINGS_SCRIPT = `
   function updateSingleFold(h2) {
     var folded = h2.classList.contains('folded');
     var btn = h2.querySelector('.wiki-fold-btn');
-    if (btn) btn.textContent = folded ? '[펼치기]' : '[접기]';
+    if (btn) {
+      btn.textContent = folded ? '[펼치기]' : '[접기]';
+      btn.setAttribute('aria-expanded', String(!folded));
+    }
     var next = h2.nextElementSibling;
     while (next && next.tagName !== 'H2' && next.tagName !== 'H1') {
       if (!next.classList.contains('wiki-toc') && !next.classList.contains('footnotes')) {
@@ -1148,6 +1168,11 @@ const SETTINGS_SCRIPT = `
     });
   }
 
+  function toggleFold(h2) {
+    h2.classList.toggle('folded');
+    updateSingleFold(h2);
+  }
+
   document.querySelectorAll('.wiki-article > h2').forEach(function(h) {
     var btn = document.createElement('span');
     btn.className = 'wiki-fold-btn';
@@ -1156,14 +1181,36 @@ const SETTINGS_SCRIPT = `
     btn.setAttribute('tabindex', '0');
     h.appendChild(btn);
 
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      h.classList.toggle('folded');
-      updateSingleFold(h);
+    // Clicking the heading (or its button) toggles, like namu.wiki; links inside still navigate
+    h.addEventListener('click', function(e) {
+      if (!e.target.closest('a')) toggleFold(h);
+    });
+    btn.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleFold(h);
+      }
     });
   });
 
+  // Unfold the section that holds a #hash target (TOC entries, footnote back-links)
+  function revealHash() {
+    var id;
+    try { id = decodeURIComponent(location.hash.slice(1)); } catch (e) { return; }
+    var el = id && document.getElementById(id);
+    var node = el && el.closest('.wiki-article > *');
+    if (!node || node.style.display !== 'none') return;
+    while (node && node.tagName !== 'H2') node = node.previousElementSibling;
+    if (!node) return;
+    node.classList.remove('folded');
+    updateSingleFold(node);
+    el.scrollIntoView();
+  }
+  window.addEventListener('hashchange', revealHash);
+
   applyAll();
+  updateFolding();
+  revealHash();
 })();
 `;
 
