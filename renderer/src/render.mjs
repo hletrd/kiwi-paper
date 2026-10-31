@@ -19,6 +19,7 @@ import { createHighlighter } from 'shiki';
 import { renderPage, renderIndexPage } from './template.mjs';
 import { decodeEntities, escapeHtml, safeHref, sanitizeRawHtml } from './sanitize.mjs';
 import { fetchSafe, readBody } from './net.mjs';
+import { htmlToBasicMarkdown } from './html2md.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -210,80 +211,6 @@ async function fetchUrl(url) {
   const isMarkdown = contentType.includes('text/markdown') || contentType.includes('text/plain')
     || /\.md$/i.test(new URL(finalUrl).pathname);
   return { content: isMarkdown ? text : htmlToBasicMarkdown(text), url: finalUrl };
-}
-
-function htmlToBasicMarkdown(html) {
-  // Strip scripts, styles, nav, header, footer
-  let text = html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
-    .replace(/<header[\s\S]*?<\/header>/gi, '')
-    .replace(/<footer[\s\S]*?<\/footer>/gi, '');
-
-  // Convert common elements to markdown
-  text = text
-    .replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '\n# $1\n')
-    .replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, '\n## $1\n')
-    .replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, '\n### $1\n')
-    .replace(/<h4[^>]*>([\s\S]*?)<\/h4>/gi, '\n#### $1\n')
-    .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, '**$1**')
-    .replace(/<b[^>]*>([\s\S]*?)<\/b>/gi, '**$1**')
-    .replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '*$1*')
-    .replace(/<i[^>]*>([\s\S]*?)<\/i>/gi, '*$1*')
-    .replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (match, href, text) => {
-      const decoded = href
-        .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
-        .replace(/&#(\d+);?/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
-        .replace(/\s/g, '').toLowerCase();
-      if (/^(javascript|vbscript|data):/.test(decoded)) return text;
-      return `[${text}](${href})`;
-    })
-    .replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, '`$1`')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, '\n$1\n')
-    .replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '- $1\n')
-    .replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, '\n> $1\n');
-
-  // Preserve images (handles any attribute order)
-  text = text.replace(/<img[^>]*?\/?>/gi, (tag) => {
-    const srcMatch = tag.match(/src=["']([^"']+)["']/i);
-    const altMatch = tag.match(/alt=["']([^"']*?)["']/i);
-    if (!srcMatch) return '';
-    return `\n![${altMatch ? altMatch[1] : ''}](${srcMatch[1]})\n`;
-  });
-
-  // Handle figure elements
-  text = text.replace(/<figure[^>]*>([\s\S]*?)<\/figure>/gi, (_, content) => {
-    const imgMatch = content.match(/src=["']([^"']+)["']/i);
-    const captionMatch = content.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
-    if (imgMatch) {
-      return `\n![${captionMatch ? captionMatch[1].replace(/<[^>]+>/g, '').trim() : ''}](${imgMatch[1]})\n`;
-    }
-    return '';
-  });
-  // Handle picture elements (use first source or img)
-  text = text.replace(/<picture[^>]*>([\s\S]*?)<\/picture>/gi, (_, content) => {
-    const srcMatch = content.match(/src=["']([^"']+)["']/i) || content.match(/srcset=["']([^\s"']+)/i);
-    if (srcMatch) return `\n![](${srcMatch[1]})\n`;
-    return '';
-  });
-
-  // Strip remaining tags
-  text = text.replace(/<[^>]+>/g, '');
-
-  // Clean up whitespace
-  text = text
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-
-  return text;
 }
 
 // ---------------------------------------------------------------------------

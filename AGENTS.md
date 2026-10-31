@@ -44,6 +44,7 @@ kiwi-paper/
 └── renderer/          # Markdown → HTML 렌더러
     ├── package.json   # ESM 패키지 (Node.js >= 22.12)
     ├── src/
+    │   ├── html2md.mjs   # URL 입력용 HTML → 마크다운 변환
     │   ├── net.mjs       # SSRF 차단 fetch (DNS 확인, 리다이렉트별 검사, 크기 제한)
     │   ├── render.mjs    # CLI 엔트리 포인트
     │   ├── sanitize.mjs  # 이스케이프, URL 스킴 검사, raw HTML 화이트리스트 정화
