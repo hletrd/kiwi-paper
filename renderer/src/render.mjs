@@ -8,7 +8,7 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, copyFileSync, realpathSync } from 'node:fs';
-import { resolve, basename, dirname, extname, join } from 'node:path';
+import { resolve, basename, dirname, extname, join, sep } from 'node:path';
 import { createRequire } from 'node:module';
 import { program } from 'commander';
 import { Marked, Lexer } from 'marked';
@@ -18,10 +18,13 @@ import { gfmHeadingId } from 'marked-gfm-heading-id';
 import { createHighlighter } from 'shiki';
 import { renderPage, renderIndexPage } from './template.mjs';
 import { decodeEntities, escapeHtml, safeHref, sanitizeRawHtml } from './sanitize.mjs';
+import { fetchSafe, readBody } from './net.mjs';
 
 const require = createRequire(import.meta.url);
 
 const MAX_IMG_SIZE = 50 * 1024 * 1024;
+const MAX_PAGE_SIZE = 20 * 1024 * 1024;
+const MAX_PARALLEL_DOWNLOADS = 4;
 
 const LANG_ALIASES = {
   sh: 'shell', zsh: 'shell', console: 'shell',
@@ -74,16 +77,16 @@ async function main() {
   // Render each file
   const rendered = [];
   for (const file of files) {
-    // Process images once on the full content
-    let processedMd = file.content;
-    if (opts.images !== false) {
-      processedMd = await processImages(processedMd, outputDir, file.sourceUrl, file.sourceDir);
-    }
-    const title = opts.title || extractTitle(processedMd) || file.name;
+    // Images are downloaded/copied while marked walks the tokens
+    imageContext = opts.images === false
+      ? null
+      : { outputDir, sourceUrl: file.sourceUrl, sourceDir: file.sourceDir };
+    const md = file.content;
+    const title = opts.title || extractTitle(md) || file.name;
 
     // --- Split mode: break this file into h2 sections ---
     if (opts.split && files.length === 1) {
-      const sections = splitMarkdown(processedMd, title);
+      const sections = splitMarkdown(md, title);
 
       if (sections.length > 1) {
         for (const sec of sections) {
@@ -103,11 +106,14 @@ async function main() {
       }
     }
 
-    const html = stripTitleHeading(await marked.parse(processedMd), title);
+    const html = stripTitleHeading(await marked.parse(md), title);
     const headings = extractHeadings(html);
     const outName = file.name.replace(/\.md$/i, '.html');
     rendered.push({ title, html, headings, outName, srcName: file.name });
   }
+
+  const saved = (await Promise.all(images.cache.values())).filter(Boolean).length;
+  if (saved > 0) console.log(`  ✓ ${saved} image(s) processed`);
 
   const isMulti = rendered.length > 1 && !opts.single;
 
@@ -164,9 +170,9 @@ async function collectInputs(inputs) {
 
   for (const input of inputs) {
     if (isUrl(input)) {
-      const content = await fetchUrl(input);
-      const name = urlToFilename(input);
-      files.push({ name, content, sourceUrl: input, sourceDir: null });
+      const { content, url } = await fetchUrl(input);
+      // Relative image paths resolve against the final URL after redirects
+      files.push({ name: urlToFilename(input), content, sourceUrl: url, sourceDir: null });
     } else {
       const p = resolve(input);
       if (!existsSync(p)) {
@@ -176,7 +182,7 @@ async function collectInputs(inputs) {
       const stat = statSync(p);
       if (stat.isDirectory()) {
         const mdFiles = readdirSync(p)
-          .filter((f) => /\.md$/i.test(f))
+          .filter((f) => /\.md$/i.test(f) && !f.startsWith('.')) // skip ._* AppleDouble files
           .sort();
         for (const f of mdFiles) {
           files.push({ name: f, content: readFileSync(join(p, f), 'utf8'), sourceUrl: null, sourceDir: p });
@@ -194,62 +200,16 @@ function isUrl(s) {
   return /^https?:\/\//i.test(s);
 }
 
-function isSafeUrl(urlStr) {
-  let parsed;
-  try {
-    parsed = new URL(urlStr);
-  } catch {
-    return false;
-  }
-  // Only allow http and https
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
-  const host = parsed.hostname.toLowerCase();
-  // Block localhost and loopback
-  if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') return false;
-  // Block IPv6 loopback (::1 and expanded forms)
-  if (host === '::1' || host === '[::1]') return false;
-  if (/^\[?0{0,4}:0{0,4}:0{0,4}:0{0,4}:0{0,4}:0{0,4}:0{0,4}:0*1\]?$/.test(host)) return false;
-  // Block IPv6 unique local (fc00::/7 — fc and fd prefixes)
-  if (/^\[?f[cd]/i.test(host)) return false;
-  // Block IPv6 link-local (fe80::/10)
-  if (/^\[?fe[89ab]/i.test(host)) return false;
-  // Block IPv4-mapped IPv6 (::ffff:x.x.x.x)
-  if (/^\[?::ffff:/i.test(host)) return false;
-  // Block all raw IPv6 addresses (bracket-enclosed) as a safe default
-  if (/^\[/.test(host)) return false;
-  // Block cloud metadata hostnames
-  if (host === 'metadata.google.internal' || host === 'metadata.goog') return false;
-  if (host === 'instance-data') return false;
-  // Block link-local IPv4
-  if (/^169\.254\./.test(host)) return false;
-  // Block private IPv4 ranges
-  if (/^10\./.test(host)) return false;
-  if (/^192\.168\./.test(host)) return false;
-  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
-  return true;
-}
-
-async function fetchUrl(url, maxRedirects = 5) {
-  if (!isSafeUrl(url)) throw new Error(`Blocked unsafe URL: ${url}`);
-  if (maxRedirects <= 0) throw new Error(`Too many redirects fetching ${url}`);
+async function fetchUrl(url) {
   console.log(`  ↓ Fetching ${url} ...`);
-  const res = await fetch(url, { signal: AbortSignal.timeout(30000), redirect: 'manual' });
-  if (res.status >= 300 && res.status < 400) {
-    const location = res.headers.get('location') || '';
-    if (!location || !isSafeUrl(location)) throw new Error(`Blocked unsafe redirect from ${url}`);
-    return fetchUrl(location, maxRedirects - 1);
-  }
-  if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
+  const { res, url: finalUrl } = await fetchSafe(url);
   const contentType = res.headers.get('content-type') || '';
+  const text = (await readBody(res, MAX_PAGE_SIZE)).toString('utf8');
 
-  // If it's already markdown or plain text, return directly
-  if (contentType.includes('text/markdown') || contentType.includes('text/plain') || url.endsWith('.md')) {
-    return await res.text();
-  }
-
-  // For HTML pages, do a basic extraction of text content
-  const html = await res.text();
-  return htmlToBasicMarkdown(html);
+  // Markdown or plain text is used as is; HTML pages get a basic conversion
+  const isMarkdown = contentType.includes('text/markdown') || contentType.includes('text/plain')
+    || /\.md$/i.test(new URL(finalUrl).pathname);
+  return { content: isMarkdown ? text : htmlToBasicMarkdown(text), url: finalUrl };
 }
 
 function htmlToBasicMarkdown(html) {
@@ -327,142 +287,100 @@ function htmlToBasicMarkdown(html) {
 }
 
 // ---------------------------------------------------------------------------
-// Image extraction and download
+// Image localization — runs from marked's walkTokens, so only real image
+// tokens are touched (not code blocks), titles and <url> forms are already
+// parsed out, and names stay unique across every file in the run.
 // ---------------------------------------------------------------------------
-async function processImages(markdown, outputDir, sourceUrl, sourceDir) {
-  const imgDir = join(outputDir, 'images');
-  let modified = markdown;
-  const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  const matches = [...markdown.matchAll(imgRegex)];
+let imageContext = null;
+const images = { count: 0, cache: new Map(), active: 0, waiting: [] };
 
-  if (matches.length === 0) return modified;
-
-  mkdirSync(imgDir, { recursive: true });
-  let count = 0;
-  const replacements = [];
-
-  for (const match of matches) {
-    const [full, alt, src] = match;
-
-    // Skip data URIs
-    if (src.startsWith('data:')) continue;
-    // Skip already-processed local images
-    if (src.startsWith('images/')) continue;
-
+function localizeImage(href, { outputDir, sourceUrl, sourceDir }) {
+  if (!href || href.startsWith('data:')) return Promise.resolve(href);
+  let source;
+  if (isUrl(href)) {
+    source = href;
+  } else if (sourceUrl) {
     try {
-      if (isUrl(src)) {
-        // Remote image: download
-        const result = await downloadRemoteImage(src, imgDir, count);
-        if (result) {
-          replacements.push({ from: full, to: `![${alt}](images/${result})` });
-          count++;
-          console.log(`  ↓ Image: ${result}`);
-        }
-      } else if (sourceUrl && !isUrl(src)) {
-        // Relative URL from web source: resolve against sourceUrl
-        try {
-          const resolved = new URL(src, sourceUrl).href;
-          const result = await downloadRemoteImage(resolved, imgDir, count);
-          if (result) {
-            replacements.push({ from: full, to: `![${alt}](images/${result})` });
-            count++;
-            console.log(`  ↓ Image: ${result}`);
-          }
-        } catch (e) { console.warn('  Warning: image processing failed:', e.message); }
-      } else if (sourceDir) {
-        // Local relative path: copy file to images/
-        const localPath = resolve(sourceDir, src);
-        if (existsSync(localPath)) {
-          const realPath = realpathSync(localPath);
-          const realSource = realpathSync(sourceDir);
-          if (!realPath.startsWith(realSource + '/') && realPath !== realSource) {
-            console.warn(`  Warning: path traversal blocked: ${src}`);
-            continue;
-          }
-          const ext = extname(localPath) || '.png';
-          const imgName = `img-${String(count + 1).padStart(2, '0')}${ext}`;
-          const destPath = join(imgDir, imgName);
-          copyFileSync(localPath, destPath);
-          replacements.push({ from: full, to: `![${alt}](images/${imgName})` });
-          count++;
-          console.log(`  → Image: ${imgName} (copied from ${basename(localPath)})`);
-        }
-      }
-    } catch (e) {
-      console.warn('  Warning: image processing failed:', e.message);
+      source = new URL(href, sourceUrl).href;
+    } catch {
+      return Promise.resolve(href);
     }
+  } else if (sourceDir) {
+    source = resolve(sourceDir, safeDecodeUri(href.split(/[?#]/)[0]));
+  } else {
+    return Promise.resolve(href);
   }
 
-  // Apply replacements in reverse order to preserve correct indices
-  for (const { from, to } of replacements.reverse()) {
-    const idx = modified.indexOf(from);
-    if (idx !== -1) {
-      modified = modified.slice(0, idx) + to + modified.slice(idx + from.length);
-    }
+  // Same source → one download/copy, one file
+  if (!images.cache.has(source)) {
+    const index = ++images.count;
+    const imgDir = join(outputDir, 'images');
+    const task = isUrl(source)
+      ? withDownloadSlot(() => downloadImage(source, imgDir, index))
+      : copyLocalImage(source, sourceDir, imgDir, index);
+    images.cache.set(source, task.catch((e) => {
+      console.warn(`  Warning: image skipped (${href}): ${e.message}`);
+      return null;
+    }));
   }
-
-  if (count > 0) console.log(`  ✓ ${count} image(s) processed`);
-  return modified;
+  return images.cache.get(source).then((name) => (name ? `images/${name}` : href));
 }
 
-async function downloadRemoteImage(url, imgDir, index, maxRedirects = 5) {
-  if (!isSafeUrl(url)) {
-    console.warn(`  Warning: blocked unsafe image URL: ${url}`);
-    return null;
-  }
-  if (maxRedirects <= 0) {
-    console.warn(`  Warning: too many redirects for image: ${url}`);
-    return null;
-  }
+async function withDownloadSlot(fn) {
+  while (images.active >= MAX_PARALLEL_DOWNLOADS) await new Promise((r) => images.waiting.push(r));
+  images.active++;
   try {
-    const imgRes = await fetch(url, {
-      headers: { 'User-Agent': 'kiwi-paper-renderer/1.0' },
-      signal: AbortSignal.timeout(15000),
-      redirect: 'manual',
-    });
+    return await fn();
+  } finally {
+    images.active--;
+    images.waiting.shift()?.();
+  }
+}
 
-    if (imgRes.status >= 300 && imgRes.status < 400) {
-      const location = imgRes.headers.get('location') || '';
-      if (!location || !isSafeUrl(location)) {
-        console.warn(`  Warning: blocked unsafe image redirect from ${url}`);
-        return null;
-      }
-      return downloadRemoteImage(location, imgDir, index, maxRedirects - 1);
-    }
+function imageName(index, ext) {
+  return `img-${String(index).padStart(2, '0')}${ext}`;
+}
 
-    if (!imgRes.ok) return null;
+async function downloadImage(url, imgDir, index) {
+  const { res, url: finalUrl } = await fetchSafe(url, { timeout: 15000 });
+  const contentType = res.headers.get('content-type') || '';
+  let rejected = null;
+  if (contentType && !contentType.startsWith('image/')) rejected = `not an image (${contentType})`;
+  // SVG can carry scripts when opened directly
+  else if (contentType.includes('svg') || /\.svg(\?|$)/i.test(finalUrl)) rejected = 'SVG blocked for security';
+  if (rejected) {
+    await res.body?.cancel();
+    throw new Error(rejected);
+  }
 
-    const contentType = imgRes.headers.get('content-type') || '';
-    if (contentType && !contentType.startsWith('image/')) return null;
+  const buffer = await readBody(res, MAX_IMG_SIZE);
+  const imgName = imageName(index, getImageExt(contentType, finalUrl));
+  mkdirSync(imgDir, { recursive: true });
+  writeFileSync(join(imgDir, imgName), buffer);
+  console.log(`  ↓ Image: ${imgName}`);
+  return imgName;
+}
 
-    // Block SVG downloads entirely (can contain scripts)
-    if (contentType.includes('svg') || /\.svg(\?|$)/i.test(url)) {
-      console.warn(`  Warning: SVG download blocked for security: ${url}`);
-      return null;
-    }
+async function copyLocalImage(localPath, sourceDir, imgDir, index) {
+  if (!existsSync(localPath)) throw new Error('file not found');
+  const realPath = realpathSync(localPath);
+  if (!realPath.startsWith(realpathSync(sourceDir) + sep)) throw new Error('outside the source directory');
 
-    const ext = getImageExt(contentType, url);
-    const imgName = `img-${String(index + 1).padStart(2, '0')}${ext}`;
-    const imgPath = join(imgDir, imgName);
+  mkdirSync(imgDir, { recursive: true });
+  // Already in <output>/images (re-rendering into the source folder)
+  if (dirname(realPath) === realpathSync(imgDir)) return basename(realPath);
 
-    // Stream with hard 50MB limit
-    const chunks = [];
-    let totalSize = 0;
-    for await (const chunk of imgRes.body) {
-      totalSize += chunk.length;
-      if (totalSize > MAX_IMG_SIZE) {
-        imgRes.body.cancel();
-        console.warn(`  Warning: image exceeds 50MB, skipping: ${url}`);
-        return null;
-      }
-      chunks.push(chunk);
-    }
-    const buffer = Buffer.concat(chunks);
-    writeFileSync(imgPath, buffer);
-    return imgName;
-  } catch (e) {
-    console.warn('  Warning: image processing failed:', e.message);
-    return null;
+  const imgName = imageName(index, extname(realPath) || '.png');
+  copyFileSync(realPath, join(imgDir, imgName));
+  console.log(`  → Image: ${imgName} (copied from ${basename(realPath)})`);
+  return imgName;
+}
+
+function safeDecodeUri(str) {
+  try {
+    return decodeURI(str);
+  } catch {
+    return str;
   }
 }
 
@@ -471,9 +389,10 @@ function getImageExt(contentType, url) {
   if (contentType.includes('jpeg') || contentType.includes('jpg')) return '.jpg';
   if (contentType.includes('gif')) return '.gif';
   if (contentType.includes('webp')) return '.webp';
+  if (contentType.includes('avif')) return '.avif';
   // SVG downloads are blocked; no .svg case here
   // Try from URL
-  const urlExt = url.match(/\.(png|jpe?g|gif|webp|bmp|tiff?)(\?|$)/i);
+  const urlExt = url.match(/\.(png|jpe?g|gif|webp|avif|bmp|tiff?)(\?|$)/i);
   if (urlExt) return '.' + urlExt[1].toLowerCase();
   return '.png'; // default
 }
@@ -522,6 +441,17 @@ async function initMarked() {
     }),
   );
 
+  // Download/copy images into <output>/images while marked walks the tokens
+  marked.use({
+    async: true,
+    walkTokens(token) {
+      if (token.type !== 'image' || !imageContext) return;
+      return localizeImage(token.href, imageContext).then((href) => {
+        token.href = href;
+      });
+    },
+  });
+
   // Custom renderer: Shiki code blocks, sanitize raw HTML, .md links → .html, wrap tables for overflow
   marked.use({
     renderer: {
@@ -542,7 +472,9 @@ async function initMarked() {
       },
       link({ href, title, tokens }) {
         const text = this.parser.parseInline(tokens);
-        const resolvedHref = href && href.endsWith('.md') ? href.replace(/\.md$/, '.html') : href;
+        // Only relative links point at sibling documents; external .md links stay as they are
+        const isRelative = href && !/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(href);
+        const resolvedHref = isRelative ? href.replace(/\.md(?=$|[?#])/i, '.html') : href;
         const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
         return `<a href="${escapeHtml(safeHref(resolvedHref))}"${titleAttr}>${text}</a>`;
       },

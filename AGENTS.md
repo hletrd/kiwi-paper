@@ -44,6 +44,7 @@ kiwi-paper/
 └── renderer/          # Markdown → HTML 렌더러
     ├── package.json   # ESM 패키지 (Node.js >= 22.12)
     ├── src/
+    │   ├── net.mjs       # SSRF 차단 fetch (DNS 확인, 리다이렉트별 검사, 크기 제한)
     │   ├── render.mjs    # CLI 엔트리 포인트
     │   ├── sanitize.mjs  # 이스케이프, URL 스킴 검사, raw HTML 화이트리스트 정화
     │   └── template.mjs  # HTML 템플릿 (CSS/JS 인라인)
@@ -66,7 +67,9 @@ CLI 인터페이스:
 node render.mjs -i <path|url...> -o <dir> [--title <str>] [--no-toc] [--single]
 ```
 
-파이프라인: marked (GFM) → footnotes → KaTeX (서버사이드) → Shiki (듀얼 테마) → heading IDs → .md→.html 링크 변환
+파이프라인: marked (GFM) → footnotes → KaTeX (서버사이드) → Shiki (듀얼 테마) → heading IDs → .md→.html 링크 변환 (상대 경로만)
+
+이미지는 marked `walkTokens`에서 처리한다. 코드 블록 안의 이미지 문법은 건드리지 않고, 같은 소스는 한 번만 받으며, 이름(`images/img-NN.ext`)은 한 번의 실행 전체에서 겹치지 않는다.
 
 ### 스킬 수정/개선 시
 
