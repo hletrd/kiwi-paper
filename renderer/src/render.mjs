@@ -149,8 +149,8 @@ async function main() {
     console.log(`  ✓ ${r.outName}`);
   }
 
-  // Generate index.html for multi-file
-  if (isMulti) {
+  // Generate index.html for multi-file (split mode already wrote its own)
+  if (isMulti && !opts.split) {
     const indexHtml = renderIndexPage({
       title: opts.title || 'kiwi-paper',
       documents: rendered.map((r) => ({ href: r.outName, title: r.title })),
@@ -513,6 +513,10 @@ function splitMarkdown(md, baseTitle) {
   let foundFirstH2 = false;
   let inCodeBlock = false;
   let fenceType = '';
+  // Footnote definitions are pulled out and re-attached to every page that cites them
+  const footnotes = new Map();
+  let footnoteLabel = null;
+  const usedSlugs = new Set(['index']);
 
   for (const line of lines) {
     const fenceMatch = !inCodeBlock && line.trim().match(/^(`{3,}|~{3,})/);
@@ -523,6 +527,22 @@ function splitMarkdown(md, baseTitle) {
       inCodeBlock = false;
       fenceType = '';
     }
+    if (!inCodeBlock) {
+      const def = line.match(/^\[\^([^\]]+)\]:/);
+      if (def) {
+        footnoteLabel = def[1];
+        footnotes.set(footnoteLabel, [line]);
+        continue;
+      }
+      // Blank or indented lines continue the current definition
+      if (footnoteLabel !== null) {
+        if (!line.trim() || /^(\s{2,}|\t)/.test(line)) {
+          footnotes.get(footnoteLabel).push(line);
+          continue;
+        }
+        footnoteLabel = null;
+      }
+    }
     const h2Match = !inCodeBlock && line.match(/^## \s*(\d+\.?\s*)?(.+)$/);
     if (h2Match) {
       if (!foundFirstH2) {
@@ -532,18 +552,28 @@ function splitMarkdown(md, baseTitle) {
         sections.push(current);
       }
       const sectionTitle = h2Match[2].trim();
-      const slug = sectionTitle
+      const baseSlug = sectionTitle
         .toLowerCase()
         .replace(/[^\w\s가-힣-]/g, '')
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '') || `section-${sections.length + 1}`;
+      // Repeated titles (or one named "index") must not overwrite another page
+      let slug = baseSlug;
+      for (let n = 2; usedSlugs.has(slug); n++) slug = `${baseSlug}-${n}`;
+      usedSlugs.add(slug);
       current = { title: sectionTitle, slug, lines: [line], level: 2 };
     } else {
       current.lines.push(line);
     }
   }
   if (current.lines.length > 0) sections.push(current);
+
+  const withFootnotes = (content) => {
+    const cited = new Set([...content.matchAll(/\[\^([^\]]+)\](?!:)/g)].map((m) => m[1]));
+    const defs = [...cited].filter((l) => footnotes.has(l)).map((l) => footnotes.get(l).join('\n').trimEnd());
+    return defs.length > 0 ? `${content}\n\n${defs.join('\n\n')}\n` : content;
+  };
 
   // Build section objects with preamble prepended to first or as index
   const result = [];
@@ -555,12 +585,12 @@ function splitMarkdown(md, baseTitle) {
     sections.forEach((s, i) => {
       indexMd += `${i + 1}. [${s.title}](${s.slug}.html)\n`;
     });
-    result.push({ title: baseTitle, slug: 'index', content: indexMd });
+    result.push({ title: baseTitle, slug: 'index', content: withFootnotes(indexMd) });
   }
 
   // Individual section pages
   sections.forEach((s) => {
-    result.push({ title: s.title, slug: s.slug, content: s.lines.join('\n') });
+    result.push({ title: s.title, slug: s.slug, content: withFootnotes(s.lines.join('\n')) });
   });
 
   return result;
