@@ -39,23 +39,23 @@ copy_skill_files "$CLAUDE_DIR"
 echo "✓ Claude Code: $CLAUDE_DIR"
 
 # --- 2. OpenCode: ~/.config/opencode/skills/kiwi-paper/ ---
-# OpenCode also reads ~/.claude/skills/ as fallback, but install to native path too
+# OpenCode also reads ~/.claude/skills/ and ~/.agents/skills/, but install to native path too
 OPENCODE_DIR="$HOME/.config/opencode/skills/kiwi-paper"
 mkdir -p "$OPENCODE_DIR"
 cp "$SCRIPT_DIR/SKILL.md" "$OPENCODE_DIR/SKILL.md"
 echo "✓ OpenCode: $OPENCODE_DIR"
 
-# --- 3. Codex CLI: ~/.agents/skills/kiwi-paper/ ---
+# --- 3. Codex CLI, Cursor, Gemini CLI: ~/.agents/skills/kiwi-paper/ ---
 CODEX_DIR="$HOME/.agents/skills/kiwi-paper"
 mkdir -p "$CODEX_DIR"
 cp "$SCRIPT_DIR/SKILL.md" "$CODEX_DIR/SKILL.md"
-echo "✓ Codex CLI: $CODEX_DIR"
+echo "✓ Codex CLI, Cursor: $CODEX_DIR"
 
-# --- 4. Cursor: rule file ---
-CURSOR_RULE="$SCRIPT_DIR/CURSOR.mdc"
-if [ -f "$CURSOR_RULE" ]; then
-  echo "  ℹ Cursor: CURSOR.mdc를 프로젝트의 .cursor/rules/kiwi-paper.mdc로 복사하세요"
-fi
+# --- 4. Antigravity: ~/.gemini/config/skills/kiwi-paper/ ---
+ANTIGRAVITY_DIR="$HOME/.gemini/config/skills/kiwi-paper"
+mkdir -p "$ANTIGRAVITY_DIR"
+cp "$SCRIPT_DIR/SKILL.md" "$ANTIGRAVITY_DIR/SKILL.md"
+echo "✓ Antigravity: $ANTIGRAVITY_DIR"
 
 # --- 5. Gemini CLI: custom command ---
 GEMINI_CMD_DIR="$HOME/.gemini/commands"
@@ -80,16 +80,24 @@ Key rules:
 - Images: extract ALL figures from source, WebSearch if needed
 - Supports 12 document types (papers, specs, API docs, manuals, news, etc.)
 
-The user's input: $ARGUMENTS
+The user's input: {{args}}
 """
 TOML
 echo "✓ Gemini CLI: $GEMINI_CMD_DIR/kiwi-paper.toml (use /kiwi-paper)"
 
 # --- 6. Gemini CLI: configure context.fileName to also read AGENTS.md ---
+json_valid() {
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$1" 2>/dev/null
+  elif command -v node >/dev/null 2>&1; then
+    node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$1" 2>/dev/null
+  fi
+}
+
 GEMINI_SETTINGS="$HOME/.gemini/settings.json"
 if [ -f "$GEMINI_SETTINGS" ]; then
-  # Check if the file is valid JSON first
-  if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$GEMINI_SETTINGS" 2>/dev/null; then
+  # Check if the file is valid JSON first (skipped when neither python3 nor node exists)
+  if ! json_valid "$GEMINI_SETTINGS"; then
     echo "  ⚠ Warning: $GEMINI_SETTINGS exists but is not valid JSON. Please fix it manually and add \"AGENTS.md\" to context.fileName."
   elif ! grep -q 'AGENTS.md' "$GEMINI_SETTINGS" 2>/dev/null; then
     echo "  ℹ Tip: Add \"AGENTS.md\" to context.fileName in $GEMINI_SETTINGS for full AGENTS.md support"
@@ -147,8 +155,9 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Usage:"
 echo "  Claude Code:  /kiwi-paper <file|url>"
-echo "  OpenCode:     /kiwi-paper <file|url>"
+echo "  OpenCode:     \"kiwi-paper로 변환해줘\" (skill 도구로 자동 로드)"
 echo "  Codex CLI:    \$kiwi-paper <file|url>"
 echo "  Gemini CLI:   /kiwi-paper <file|url>"
-echo "  Cursor:       \"kiwi-paper로 변환해줘\""
+echo "  Cursor:       Agent 채팅에서 /kiwi-paper"
+echo "  Antigravity:  /kiwi-paper <file|url>"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

@@ -73,8 +73,9 @@ cd kiwi-paper
 ```
 
 `install.sh`가 하는 일:
-1. `SKILL.md`를 `~/.claude/skills/kiwi-paper/`에 복사
-2. `renderer/`에서 `npm ci` (Node.js 22.12 이상일 때)
+1. `SKILL.md`와 렌더러를 `~/.claude/skills/kiwi-paper/`에 복사
+2. 다른 도구용으로 `SKILL.md`를 `~/.agents/skills/`, `~/.config/opencode/skills/`, `~/.gemini/config/skills/`에 복사하고 Gemini CLI용 `/kiwi-paper` 명령 등록
+3. 렌더러 폴더에서 `npm ci` (Node.js 22.12 이상일 때)
 
 스킬만 필요하다면:
 ```bash
@@ -139,6 +140,8 @@ node src/render.mjs -i https://example.com/doc.md -o ../dist
 #   -t, --title <str>   문서 제목
 #   --no-toc             목차 비활성화
 #   --single             인덱스 페이지 생략
+#   --split              h2 섹션마다 페이지를 나눠 생성
+#   --no-images          이미지 다운로드/복사 생략
 ```
 
 </details>
@@ -158,15 +161,15 @@ Claude Code 외에도 주요 AI 도구는 대부분 지원합니다.
 | 도구 | 호출 방법 | 스킬 경로 |
 |------|----------|----------|
 | [Claude Code](https://claude.com/claude-code) | `/kiwi-paper` | `~/.claude/skills/kiwi-paper/` |
-| [OpenCode](https://opencode.ai) | `/kiwi-paper` | `~/.config/opencode/skills/kiwi-paper/` |
+| [OpenCode](https://opencode.ai) | 프롬프트로 요청 (자동 로드) | `~/.config/opencode/skills/kiwi-paper/` |
 | [Codex CLI](https://github.com/openai/codex) | `$kiwi-paper` | `~/.agents/skills/kiwi-paper/` |
 | Codex App | `$kiwi-paper` | Codex CLI와 동일 |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `/kiwi-paper` | `~/.gemini/commands/kiwi-paper.toml` |
-| [Cursor](https://cursor.com) | 프롬프트로 요청 | `.cursor/rules/kiwi-paper.mdc` |
-| [Antigravity](https://antigravity.google) | 프롬프트로 요청 | Cursor와 동일 |
+| [Cursor](https://cursor.com) | Agent 채팅에서 `/kiwi-paper` | `~/.agents/skills/kiwi-paper/` |
+| [Antigravity](https://antigravity.google) | `/kiwi-paper` | `~/.gemini/config/skills/kiwi-paper/` |
 | [Claude Cowork](https://claude.com/product/cowork) | 프롬프트로 요청 | 파일 읽기로 SKILL.md 참조 |
 
-`./install.sh` 한 번이면 CLI 도구는 전부 됩니다. Cursor, Antigravity 같은 IDE는 프로젝트에 룰 파일을 복사해서 쓰고, Claude Cowork는 SKILL.md를 직접 읽어주면 됩니다.
+`./install.sh` 한 번이면 Cursor와 Antigravity까지 전부 됩니다. 프로젝트 단위 룰 파일이 필요하면 `CURSOR.mdc`를 `.cursor/rules/kiwi-paper.mdc`로 복사해 쓰면 됩니다. Claude Cowork는 SKILL.md를 직접 읽어주면 됩니다.
 
 ## 기여
 
