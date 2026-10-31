@@ -9,7 +9,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Skill-blueviolet)](https://claude.com/claude-code)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-339933)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.12-339933)](https://nodejs.org/)
 
 </div>
 
@@ -61,7 +61,7 @@ kiwi-paper를 설치해줘.
 
 클론부터 스킬 등록, 렌더러 설치까지 알아서 합니다.
 
-> **참고**: HTML 렌더링에는 Node.js 20 이상이 필요합니다. 없으면 마크다운만 나옵니다.
+> **참고**: HTML 렌더링에는 Node.js 22.12 이상이 필요합니다. 없으면 마크다운만 나옵니다.
 
 <details>
 <summary>수동 설치 (CLI)</summary>
@@ -74,7 +74,7 @@ cd kiwi-paper
 
 `install.sh`가 하는 일:
 1. `SKILL.md`를 `~/.claude/skills/kiwi-paper/`에 복사
-2. `renderer/`에서 `npm install` (Node.js 20 이상일 때)
+2. `renderer/`에서 `npm ci` (Node.js 22.12 이상일 때)
 
 스킬만 필요하다면:
 ```bash

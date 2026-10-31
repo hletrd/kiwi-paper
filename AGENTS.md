@@ -42,7 +42,7 @@ kiwi-paper/
 ├── examples/
 │   └── attention-is-all-you-need.md  # 예제 출력
 └── renderer/          # Markdown → HTML 렌더러
-    ├── package.json   # ESM 패키지 (Node.js >= 20)
+    ├── package.json   # ESM 패키지 (Node.js >= 22.12)
     └── src/
         ├── render.mjs    # CLI 엔트리 포인트
         └── template.mjs  # HTML 템플릿 (CSS/JS 인라인)

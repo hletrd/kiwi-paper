@@ -109,15 +109,19 @@ fi
 
 # --- 7. Install renderer dependencies ---
 if command -v node >/dev/null 2>&1; then
-  NODE_VERSION=$(node -v | sed 's/v//' | cut -d. -f1)
-  if [ "$NODE_VERSION" -ge 20 ]; then
+  # commander 15 requires Node.js >= 22.12
+  if node -e 'const [a, b] = process.versions.node.split(".").map(Number); process.exit(a > 22 || (a === 22 && b >= 12) ? 0 : 1)'; then
     echo ""
     echo "Installing renderer dependencies..."
-    cd "$CLAUDE_DIR/renderer" && npm install --silent
+    if [ -f "$CLAUDE_DIR/renderer/package-lock.json" ]; then
+      (cd "$CLAUDE_DIR/renderer" && npm ci --silent)
+    else
+      (cd "$CLAUDE_DIR/renderer" && npm install --silent)
+    fi
     echo "✓ Renderer ready"
   else
     echo ""
-    echo "⚠ Node.js >= 20 required for HTML renderer (found v$NODE_VERSION). Skipping."
+    echo "⚠ Node.js >= 22.12 required for HTML renderer (found $(node -v)). Skipping."
   fi
 else
   echo ""

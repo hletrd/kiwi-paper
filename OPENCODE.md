@@ -31,7 +31,7 @@
 
 - `SKILL.md` — 핵심 변환 규칙 (반드시 읽을 것)
 - `AGENTS.md` — 에이전트 가이드
-- `renderer/` — HTML 렌더러 (Node.js >= 20)
+- `renderer/` — HTML 렌더러 (Node.js >= 22.12)
 - `examples/` — 변환 예제
 
 ## 문서 유형 자동 감지

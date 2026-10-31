@@ -9,7 +9,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, copyFileSync, realpathSync } from 'node:fs';
 import { resolve, basename, dirname, extname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { program } from 'commander';
 import { Marked } from 'marked';
 import markedFootnote from 'marked-footnote';
@@ -19,7 +19,7 @@ import { gfmHeadingId } from 'marked-gfm-heading-id';
 import { createHighlighter } from 'shiki';
 import { renderPage, renderIndexPage } from './template.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 
 const MAX_IMG_SIZE = 50 * 1024 * 1024;
 
@@ -686,23 +686,15 @@ function extractTitle(md) {
 // KaTeX CSS
 // ---------------------------------------------------------------------------
 function loadKatexCss() {
-  const candidates = [
-    join(__dirname, '..', 'node_modules', 'katex', 'dist', 'katex.min.css'),
-    join(process.cwd(), 'node_modules', 'katex', 'dist', 'katex.min.css'),
-  ];
-  for (const p of candidates) {
-    if (existsSync(p)) {
-      let css = readFileSync(p, 'utf8');
-      // Rewrite font URLs to CDN
-      css = css.replace(
-        /url\(fonts\//g,
-        'url(https://cdn.jsdelivr.net/npm/katex@0.16.38/dist/fonts/',
-      );
-      return css;
-    }
+  try {
+    const css = readFileSync(require.resolve('katex/dist/katex.min.css'), 'utf8');
+    const { version } = JSON.parse(readFileSync(require.resolve('katex/package.json'), 'utf8'));
+    // Rewrite font URLs to the CDN copy of the installed KaTeX version
+    return css.replace(/url\(fonts\//g, `url(https://cdn.jsdelivr.net/npm/katex@${version}/dist/fonts/`);
+  } catch {
+    console.warn('Warning: KaTeX CSS not found, math styling may be missing.');
+    return '';
   }
-  console.warn('Warning: KaTeX CSS not found, math styling may be missing.');
-  return '';
 }
 
 // ---------------------------------------------------------------------------
