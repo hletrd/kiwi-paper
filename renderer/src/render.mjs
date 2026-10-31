@@ -11,13 +11,13 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSy
 import { resolve, basename, dirname, extname, join } from 'node:path';
 import { createRequire } from 'node:module';
 import { program } from 'commander';
-import { Marked } from 'marked';
+import { Marked, Lexer } from 'marked';
 import markedFootnote from 'marked-footnote';
 import markedKatexExtension from 'marked-katex-extension';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 import { createHighlighter } from 'shiki';
 import { renderPage, renderIndexPage } from './template.mjs';
-import { escapeHtml, safeHref, sanitizeRawHtml } from './sanitize.mjs';
+import { decodeEntities, escapeHtml, safeHref, sanitizeRawHtml } from './sanitize.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -87,7 +87,7 @@ async function main() {
 
       if (sections.length > 1) {
         for (const sec of sections) {
-          const secHtml = await marked.parse(sec.content);
+          const secHtml = stripTitleHeading(await marked.parse(sec.content), sec.title);
           const secHeadings = extractHeadings(secHtml);
           const outName = sec.slug + '.html';
           rendered.push({
@@ -103,7 +103,7 @@ async function main() {
       }
     }
 
-    const html = await marked.parse(processedMd);
+    const html = stripTitleHeading(await marked.parse(processedMd), title);
     const headings = extractHeadings(html);
     const outName = file.name.replace(/\.md$/i, '.html');
     rendered.push({ title, html, headings, outName, srcName: file.name });
@@ -511,8 +511,8 @@ async function initMarked() {
   // GFM heading IDs
   marked.use(gfmHeadingId({ prefix: '' }));
 
-  // Footnotes
-  marked.use(markedFootnote());
+  // Footnotes — backRefLabel must not contain {0}: marked-footnote inserts the raw label unescaped
+  marked.use(markedFootnote({ description: '각주', backRefLabel: '본문으로 돌아가기' }));
 
   // KaTeX math
   marked.use(
@@ -600,19 +600,32 @@ function extractHeadings(html) {
     const level = parseInt(match[1]);
     const id = match[2];
     if (id === 'footnote-label') continue; // Skip auto-generated footnotes heading
-    const text = match[3].replace(/<[^>]+>/g, '').trim();
+    const text = decodeEntities(
+      match[3]
+        .replace(/<sup><a [^>]*data-footnote-ref[\s\S]*?<\/sup>/g, '')
+        .replace(/<[^>]+>/g, ''),
+    ).trim();
     headings.push({ id, text, level });
   }
   return headings;
 }
 
 function extractTitle(md) {
-  const match = md.match(/^#\s+(.+)$/m);
-  if (!match) return null;
-  return match[1]
-    .replace(/\*\*(.+?)\*\*/g, '$1')
-    .replace(/~~(.+?)~~/g, '$1')
-    .trim();
+  // Lex instead of regex so `# comments` inside code blocks are ignored
+  const h1 = Lexer.lex(md).find((t) => t.type === 'heading' && t.depth === 1);
+  return h1 ? plainText(h1.tokens).trim() || null : null;
+}
+
+function plainText(tokens = []) {
+  return tokens.map((t) => (t.tokens ? plainText(t.tokens) : t.text ?? '')).join('');
+}
+
+// The page header already shows the title, so drop a leading H1 that repeats it
+function stripTitleHeading(html, title) {
+  const match = html.match(/^\s*<h1[^>]*>([\s\S]*?)<\/h1>\s*/);
+  if (!match) return html;
+  const text = decodeEntities(match[1].replace(/<[^>]+>/g, '')).trim();
+  return text === title ? html.slice(match[0].length) : html;
 }
 
 // ---------------------------------------------------------------------------

@@ -210,9 +210,11 @@ function buildToc(headings) {
     counters[depth]++;
     // Reset deeper counters
     for (let i = depth + 1; i < counters.length; i++) counters[i] = 0;
-    // Build number string
-    const num = counters.slice(0, depth + 1).join('.');
-    return `<div class="toc-entry toc-depth-${depth}"><a href="#${escapeHtml(h.id)}"><span class="toc-num">${num}.</span> ${escapeHtml(h.text)}</a></div>`;
+    // Headings numbered in the source ("2.1. 배경") keep their own number
+    const own = h.text.match(/^(\d+(?:\.\d+)*)\.\s+(.+)$/);
+    const num = own ? own[1] : counters.slice(0, depth + 1).join('.');
+    const text = own ? own[2] : h.text;
+    return `<div class="toc-entry toc-depth-${depth}"><a href="#${escapeHtml(h.id)}"><span class="toc-num">${num}.</span> ${escapeHtml(text)}</a></div>`;
   });
 
   return `<div class="wiki-toc" id="toc">
@@ -421,11 +423,11 @@ p { margin: 0; font-size: 14.4px; line-height: 21.6px; }
 a { color: var(--link-color); text-decoration: none; transition: color 0.1s; }
 a:hover { color: var(--link-hover); text-decoration: underline; }
 
-.wiki-article a:not([href^="http"]):not(.footnote-ref):not(.footnote-backref) {
+.wiki-article a:not([href^="http"]):not([href^="#"]) {
   color: var(--text-primary);
   font-weight: 700;
 }
-.wiki-article a:not([href^="http"]):not(.footnote-ref):not(.footnote-backref):hover {
+.wiki-article a:not([href^="http"]):not([href^="#"]):hover {
   color: var(--link-color);
 }
 
@@ -565,13 +567,20 @@ section.footnotes {
 }
 section.footnotes ol { padding-left: 1.5em; }
 section.footnotes li { margin: 0.3em 0; }
-.footnote-ref {
-  font-size: 0.75em;
-  vertical-align: super;
-  line-height: 0;
+sup { line-height: 0; }
+a[data-footnote-ref] { color: var(--link-color); font-size: 12px; font-weight: normal; }
+a[data-footnote-backref] { text-decoration: none; margin-left: 0.3em; color: var(--namu-brand); }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
-.footnote-ref a { color: var(--link-color); font-size: 12px; font-weight: normal; }
-.footnote-backref { text-decoration: none; margin-left: 0.3em; color: var(--namu-brand); }
 
 /* --- KaTeX --- */
 .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.4em 0; }
@@ -823,12 +832,12 @@ body.font-large { font-size: 17px; }
 body.font-xlarge { font-size: 19px; }
 
 /* --- Inline Footnote Mode --- */
-body.fn-inline .footnote-ref a {
+body.fn-inline a[data-footnote-ref] {
   cursor: default;
   pointer-events: none;
 }
-body.fn-inline .footnote-ref::after {
-  content: attr(data-fn-text);
+.fn-inline-text { display: none; }
+body.fn-inline .fn-inline-text {
   display: inline;
   font-size: 13px;
   color: var(--text-muted);
@@ -1051,16 +1060,24 @@ const SETTINGS_SCRIPT = `
     if (settings.theme === 'auto') applyTheme('auto');
   });
 
-  // Populate footnote inline text (for inline mode)
-  document.querySelectorAll('.footnote-ref').forEach(function(ref) {
-    var link = ref.querySelector('a');
-    if (!link) return;
-    var id = link.getAttribute('href')?.replace('#', '');
-    var fn = document.getElementById(id);
-    if (fn) {
-      var text = fn.textContent?.replace(/\\s+/g, ' ').replace(/↩$/, '').trim();
-      if (text) ref.setAttribute('data-fn-text', text);
-    }
+  // Footnote text without the ↩ back-links, for inline mode and popovers
+  function footnoteText(a) {
+    var fn = document.getElementById((a.getAttribute('href') || '').slice(1));
+    if (!fn) return '';
+    var copy = fn.cloneNode(true);
+    copy.querySelectorAll('[data-footnote-backref]').forEach(function(b) { b.remove(); });
+    return copy.textContent.replace(/\\s+/g, ' ').trim();
+  }
+
+  // Inline mode shows the text right after the reference
+  var footnoteRefs = document.querySelectorAll('a[data-footnote-ref]');
+  footnoteRefs.forEach(function(a) {
+    var text = footnoteText(a);
+    if (!text) return;
+    var span = document.createElement('span');
+    span.className = 'fn-inline-text';
+    span.textContent = text;
+    (a.closest('sup') || a).after(span);
   });
 
   // Footnote popover — single element, created once and reused
@@ -1070,13 +1087,12 @@ const SETTINGS_SCRIPT = `
   pop.style.display = 'none';
   document.body.appendChild(pop);
 
-  document.querySelectorAll('.footnote-ref a').forEach(function(a) {
-    a.addEventListener('mouseenter', function() {
+  footnoteRefs.forEach(function(a) {
+    function show() {
       if (settings['fn-mode'] !== 'popover') return;
-      var id = a.getAttribute('href')?.replace('#', '');
-      var fn = document.getElementById(id);
-      if (!fn) return;
-      pop.textContent = fn.textContent;
+      var text = footnoteText(a);
+      if (!text) return;
+      pop.textContent = text;
       pop.style.display = '';
       var rect = a.getBoundingClientRect();
       pop.style.left = (rect.left + window.scrollX) + 'px';
@@ -1088,10 +1104,12 @@ const SETTINGS_SCRIPT = `
       if (popRect.bottom > window.innerHeight) {
         pop.style.top = (rect.top + window.scrollY - popRect.height - 4) + 'px';
       }
-    });
-    a.addEventListener('mouseleave', function() {
-      pop.style.display = 'none';
-    });
+    }
+    function hide() { pop.style.display = 'none'; }
+    a.addEventListener('mouseenter', show);
+    a.addEventListener('focus', show);
+    a.addEventListener('mouseleave', hide);
+    a.addEventListener('blur', hide);
   });
 
   // Namu.wiki heading number links — click number to jump to TOC
@@ -1112,7 +1130,7 @@ const SETTINGS_SCRIPT = `
     if (btn) btn.textContent = folded ? '[펼치기]' : '[접기]';
     var next = h2.nextElementSibling;
     while (next && next.tagName !== 'H2' && next.tagName !== 'H1') {
-      if (!next.classList.contains('wiki-toc') && !next.classList.contains('wiki-related') && !next.classList.contains('page-nav')) {
+      if (!next.classList.contains('wiki-toc') && !next.classList.contains('footnotes')) {
         next.style.display = folded ? 'none' : '';
       }
       next = next.nextElementSibling;
