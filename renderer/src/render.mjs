@@ -14,7 +14,6 @@ import { program } from 'commander';
 import { Marked } from 'marked';
 import markedFootnote from 'marked-footnote';
 import markedKatexExtension from 'marked-katex-extension';
-import { markedHighlight } from 'marked-highlight';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 import { createHighlighter } from 'shiki';
 import { renderPage, renderIndexPage } from './template.mjs';
@@ -523,27 +522,21 @@ async function initMarked() {
     }),
   );
 
-  // Shiki highlighting (dual theme)
-  marked.use(
-    markedHighlight({
-      async: true,
-      highlight(code, lang) {
-        const language = resolveLanguage(loadedLangs, lang);
+  // Custom renderer: Shiki code blocks, sanitize raw HTML, .md links → .html, wrap tables for overflow
+  marked.use({
+    renderer: {
+      code({ text, lang }) {
+        // Shiki returns a complete <pre>, so don't let marked wrap it again
+        const language = resolveLanguage(loadedLangs, lang?.match(/^\S*/)[0]);
         try {
-          return highlighter.codeToHtml(code, {
+          return highlighter.codeToHtml(text, {
             lang: language,
             themes: { light: 'github-light', dark: 'tokyo-night' },
           });
         } catch {
-          return code;
+          return `<pre><code>${escapeHtml(text)}</code></pre>`;
         }
       },
-    }),
-  );
-
-  // Custom renderer: sanitize raw HTML, .md links → .html, wrap tables for overflow
-  marked.use({
-    renderer: {
       html({ text }) {
         return sanitizeRawHtml(text);
       },
