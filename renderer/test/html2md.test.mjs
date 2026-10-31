@@ -13,8 +13,12 @@ test('does not confuse <b>/<i> with <br>, <body> or <img>', () => {
 });
 
 test('drops head content and converts pre to fenced code', () => {
-  const md = htmlToBasicMarkdown('<head><title>T</title></head><pre><code>a &lt; b &amp;&amp; c</code></pre>');
-  assert.equal(md, '```\na < b && c\n```');
+  const md = htmlToBasicMarkdown('<head><title>T</title></head><h1>H</h1><pre><code>a &lt; b &amp;&amp; c</code></pre>');
+  assert.equal(md, '# H\n\n```\na < b && c\n```');
+});
+
+test('uses <title> as the H1 only when the body has none', () => {
+  assert.equal(htmlToBasicMarkdown('<head><title>A &amp; B</title></head><p>x</p>'), '# A & B\n\nx');
 });
 
 test('picture falls back to source srcset', () => {

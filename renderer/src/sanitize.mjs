@@ -20,7 +20,7 @@ export function escapeHtml(str) {
 }
 
 const NAMED_ENTITIES = {
-  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0',
   colon: ':', tab: '\t', newline: '\n',
 };
 

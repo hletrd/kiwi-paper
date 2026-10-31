@@ -36,6 +36,10 @@ function image(alt, src) {
 }
 
 export function htmlToBasicMarkdown(html) {
+  // <title> becomes the H1 when the body has none
+  const pageTitle = html.match(/<title(?=[\s>])[^>]*>([\s\S]*?)<\/title\s*>/i)?.[1].trim();
+  const needsTitle = pageTitle && !new RegExp(open('h1'), 'i').test(html);
+
   let text = html
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/<(head|script|style|noscript|template|svg|nav|header|footer)(?=[\s>/])[\s\S]*?<\/\1\s*>/gi, '');
@@ -74,8 +78,9 @@ export function htmlToBasicMarkdown(html) {
   text = convertElement(text, 'li', (inner) => `- ${inner.trim()}\n`);
   text = convertElement(text, 'blockquote', (inner) => `\n> ${inner.trim()}\n`);
 
-  return decodeEntities(stripTags(text))
-    .replace(/ /g, ' ')
+  const md = decodeEntities(stripTags(text))
+    .replace(/\u00a0/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+  return needsTitle ? `# ${decodeEntities(stripTags(pageTitle))}\n\n${md}` : md;
 }
