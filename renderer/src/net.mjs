@@ -67,12 +67,16 @@ export async function fetchSafe(url, { timeout = 30000, maxRedirects = 5 } = {})
       redirect: 'manual',
     });
     if (res.status >= 300 && res.status < 400) {
+      await res.body?.cancel();
       const location = res.headers.get('location');
       if (!location) throw new Error(`Redirect without Location from ${current}`);
       current = new URL(location, current).href;
       continue;
     }
-    if (!res.ok) throw new Error(`Failed to fetch ${current}: ${res.status}`);
+    if (!res.ok) {
+      await res.body?.cancel();
+      throw new Error(`Failed to fetch ${current}: ${res.status}`);
+    }
     return { res, url: current };
   }
   throw new Error(`Too many redirects fetching ${url}`);

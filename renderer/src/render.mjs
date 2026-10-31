@@ -476,7 +476,8 @@ function extractTitle(md) {
 }
 
 function plainText(tokens = []) {
-  return tokens.map((t) => (t.tokens ? plainText(t.tokens) : t.text ?? '')).join('');
+  // Raw HTML tags (<sup>, <br>) are markup, not title text
+  return tokens.map((t) => (t.type === 'html' ? '' : t.tokens ? plainText(t.tokens) : t.text ?? '')).join('');
 }
 
 // The page header already shows the title, so drop a leading H1 that repeats it
@@ -506,7 +507,7 @@ function loadKatexCss() {
 // Document splitting by h2 sections
 // ---------------------------------------------------------------------------
 function splitMarkdown(md, baseTitle) {
-  const lines = md.split('\n');
+  const lines = md.split(/\r?\n/);
   const sections = [];
   let current = { title: baseTitle, slug: 'index', lines: [], level: 0 };
   let preamble = [];
@@ -543,7 +544,8 @@ function splitMarkdown(md, baseTitle) {
         footnoteLabel = null;
       }
     }
-    const h2Match = !inCodeBlock && line.match(/^## \s*(\d+\.?\s*)?(.+)$/);
+    // A leading "1." / "2.1." number is dropped; "3D ..." or "2024" stays part of the title
+    const h2Match = !inCodeBlock && line.match(/^## \s*(\d+(?:\.\d+)*\.\s+)?(.+)$/);
     if (h2Match) {
       if (!foundFirstH2) {
         preamble = current.lines;
@@ -583,7 +585,7 @@ function splitMarkdown(md, baseTitle) {
     let indexMd = preamble.join('\n') + '\n\n---\n\n';
     indexMd += '## 문서 목차\n\n';
     sections.forEach((s, i) => {
-      indexMd += `${i + 1}. [${s.title}](${s.slug}.html)\n`;
+      indexMd += `${i + 1}. [${s.title.replace(/[[\]]/g, '\\$&')}](${s.slug}.html)\n`;
     });
     result.push({ title: baseTitle, slug: 'index', content: withFootnotes(indexMd) });
   }

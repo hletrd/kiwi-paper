@@ -1077,6 +1077,18 @@ const SETTINGS_SCRIPT = `
     if (settings.theme === 'auto') applyTheme('auto');
   });
 
+  // Namu.wiki heading number links — click number to jump to TOC.
+  // Runs before footnote setup because it rewrites heading innerHTML.
+  var wikiArticle = document.querySelector('.wiki-article');
+  if (wikiArticle) {
+    wikiArticle.querySelectorAll('h2, h3, h4, h5, h6').forEach(function(h) {
+      var m = h.innerHTML.match(/^([\\d]+(?:\\.[\\d]+)*\\.)[\\s]+/);
+      if (m) {
+        h.innerHTML = '<a href="#toc" class="wiki-heading-num">' + m[1] + '</a> ' + h.innerHTML.slice(m[0].length);
+      }
+    });
+  }
+
   // Footnote text without the ↩ back-links, for inline mode and popovers
   function footnoteText(a) {
     var fn = document.getElementById((a.getAttribute('href') || '').slice(1));
@@ -1128,17 +1140,6 @@ const SETTINGS_SCRIPT = `
     a.addEventListener('mouseleave', hide);
     a.addEventListener('blur', hide);
   });
-
-  // Namu.wiki heading number links — click number to jump to TOC
-  var wikiArticle = document.querySelector('.wiki-article');
-  if (wikiArticle) {
-    wikiArticle.querySelectorAll('h2, h3, h4, h5, h6').forEach(function(h) {
-      var m = h.innerHTML.match(/^([\\d]+(?:\\.[\\d]+)*\\.)[\\s]+/);
-      if (m) {
-        h.innerHTML = '<a href="#toc" class="wiki-heading-num">' + m[1] + '</a> ' + h.innerHTML.slice(m[0].length);
-      }
-    });
-  }
 
   // Section folding — namu.wiki-style per-section [접기]/[펼치기]
   function updateSingleFold(h2) {
