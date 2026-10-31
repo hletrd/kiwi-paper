@@ -4,7 +4,7 @@
  * kiwi-paper renderer — Markdown to HTML CLI
  *
  * Usage:
- *   node render.mjs -i <path|url> -o <dir> [--title <str>] [--no-toc] [--single]
+ *   node render.mjs -i <path|url...> -o <dir> [--title <str>] [--no-toc] [--single] [--split] [--no-images]
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, copyFileSync, realpathSync } from 'node:fs';

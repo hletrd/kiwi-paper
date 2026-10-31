@@ -65,7 +65,7 @@ kiwi-paper/
 
 CLI 인터페이스:
 ```
-node render.mjs -i <path|url...> -o <dir> [--title <str>] [--no-toc] [--single]
+node render.mjs -i <path|url...> -o <dir> [--title <str>] [--no-toc] [--single] [--split] [--no-images]
 ```
 
 파이프라인: marked (GFM) → footnotes → KaTeX (서버사이드) → Shiki (듀얼 테마) → heading IDs → .md→.html 링크 변환 (상대 경로만)
