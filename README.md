@@ -73,14 +73,14 @@ cd kiwi-paper
 ```
 
 `install.sh`가 하는 일:
-1. `SKILL.md`와 렌더러를 `~/.claude/skills/kiwi-paper/`에 복사
-2. 다른 도구용으로 `SKILL.md`를 `~/.agents/skills/`, `~/.config/opencode/skills/`, `~/.gemini/config/skills/`에 복사하고 Gemini CLI용 `/kiwi-paper` 명령 등록
+1. `SKILL.md`, `references/`, 렌더러를 `~/.claude/skills/kiwi-paper/`에 복사
+2. 다른 도구용으로 `SKILL.md`와 `references/`를 `~/.agents/skills/`, `~/.config/opencode/skills/`, `~/.gemini/config/skills/`에 복사하고 Gemini CLI용 `/kiwi-paper` 명령 등록
 3. 렌더러 폴더에서 `npm ci` (Node.js 22.12 이상일 때)
 
 스킬만 필요하다면:
 ```bash
 mkdir -p ~/.claude/skills/kiwi-paper
-cp SKILL.md ~/.claude/skills/kiwi-paper/
+cp -r SKILL.md references ~/.claude/skills/kiwi-paper/
 ```
 
 </details>

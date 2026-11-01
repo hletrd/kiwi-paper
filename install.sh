@@ -9,10 +9,18 @@ echo "🥝 kiwi-paper installer"
 echo ""
 
 # --- Prepare skill payload (reused across platforms) ---
-copy_skill_files() {
+# SKILL.md and the references/ it points to
+copy_skill_doc() {
   local dest="$1"
   mkdir -p "$dest"
   cp "$SCRIPT_DIR/SKILL.md" "$dest/SKILL.md"
+  rm -rf "$dest/references"
+  cp -r "$SCRIPT_DIR/references" "$dest/references"
+}
+
+copy_skill_files() {
+  local dest="$1"
+  copy_skill_doc "$dest"
   [ -f "$SCRIPT_DIR/AGENTS.md" ] && cp "$SCRIPT_DIR/AGENTS.md" "$dest/AGENTS.md"
   # Copy renderer
   if [ -d "$SCRIPT_DIR/renderer" ]; then
@@ -41,20 +49,17 @@ echo "✓ Claude Code: $CLAUDE_DIR"
 # --- 2. OpenCode: ~/.config/opencode/skills/kiwi-paper/ ---
 # OpenCode also reads ~/.claude/skills/ and ~/.agents/skills/, but install to native path too
 OPENCODE_DIR="$HOME/.config/opencode/skills/kiwi-paper"
-mkdir -p "$OPENCODE_DIR"
-cp "$SCRIPT_DIR/SKILL.md" "$OPENCODE_DIR/SKILL.md"
+copy_skill_doc "$OPENCODE_DIR"
 echo "✓ OpenCode: $OPENCODE_DIR"
 
 # --- 3. Codex CLI, Cursor, Gemini CLI: ~/.agents/skills/kiwi-paper/ ---
 CODEX_DIR="$HOME/.agents/skills/kiwi-paper"
-mkdir -p "$CODEX_DIR"
-cp "$SCRIPT_DIR/SKILL.md" "$CODEX_DIR/SKILL.md"
+copy_skill_doc "$CODEX_DIR"
 echo "✓ Codex CLI, Cursor: $CODEX_DIR"
 
 # --- 4. Antigravity: ~/.gemini/config/skills/kiwi-paper/ ---
 ANTIGRAVITY_DIR="$HOME/.gemini/config/skills/kiwi-paper"
-mkdir -p "$ANTIGRAVITY_DIR"
-cp "$SCRIPT_DIR/SKILL.md" "$ANTIGRAVITY_DIR/SKILL.md"
+copy_skill_doc "$ANTIGRAVITY_DIR"
 echo "✓ Antigravity: $ANTIGRAVITY_DIR"
 
 # --- 5. Gemini CLI: custom command ---

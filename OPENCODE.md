@@ -30,6 +30,7 @@
 ## 파일 구조
 
 - `SKILL.md` — 핵심 변환 규칙 (반드시 읽을 것)
+- `references/` — 문서 유형별 구조와 톤, 그림 수집, 휴머나이즈 세부 규칙 (SKILL.md가 단계별로 읽으라고 안내)
 - `AGENTS.md` — 에이전트 가이드
 - `renderer/` — HTML 렌더러 (Node.js >= 22.12)
 - `examples/` — 변환 예제

@@ -6,7 +6,7 @@
 
 **kiwi-paper**는 학술 논문 PDF나 전공 서적을 나무위키 스타일의 마크다운 문서로 변환하는 Claude Code 스킬입니다.
 
-- **스킬 정의**: `SKILL.md` (프로젝트 루트 및 `~/.claude/skills/kiwi-paper/`)
+- **스킬 정의**: `SKILL.md`와 세부 규칙 `references/` (프로젝트 루트 및 `~/.claude/skills/kiwi-paper/`)
 - **예제 출력**: `examples/` 디렉토리
 - **설치 스크립트**: `install.sh`
 
@@ -34,7 +34,11 @@
 ```
 kiwi-paper/
 ├── AGENTS.md          # 이 파일 — AI 에이전트 가이드
-├── SKILL.md           # 스킬 정의 (핵심 파일)
+├── SKILL.md           # 스킬 정의 (핵심 파일, 본문 24,000바이트 이하)
+├── references/        # SKILL.md가 단계별로 읽게 하는 세부 규칙
+│   ├── document-types.md  # 유형 감지 힌트, 유형별 구조와 톤
+│   ├── humanize.md        # 3단계 휴머나이즈 체크리스트
+│   └── images.md          # 그림과 표 수집 절차
 ├── README.md          # 프로젝트 소개
 ├── LICENSE            # MIT 라이선스
 ├── install.sh         # 스킬 + 렌더러 설치 스크립트
@@ -76,8 +80,9 @@ node render.mjs -i <path|url...> -o <dir> [--title <str>] [--no-toc] [--single] 
 
 1. `SKILL.md`를 읽고 현재 스킬 정의를 파악
 2. 수정이 필요한 부분을 변경
-3. **반드시** 프로젝트 루트의 `SKILL.md`와 `~/.claude/skills/kiwi-paper/SKILL.md` 양쪽을 동기화
-4. `examples/` 디렉토리의 예제가 변경된 스킬과 일관성 있는지 확인
+3. `SKILL.md` 본문(frontmatter 제외)은 24,000바이트 이하로 유지. Antigravity CLI(`agy`)는 그 뒤를 읽지 않는다. 늘어나는 세부 규칙은 `references/`로 빼고 SKILL.md에서 읽을 시점을 안내한다. `cd renderer && npm test`가 크기와 참조 파일을 검사한다
+4. **반드시** 프로젝트 루트의 `SKILL.md`, `references/`와 `~/.claude/skills/kiwi-paper/` 양쪽을 동기화 (`./install.sh` 재실행)
+5. `examples/` 디렉토리의 예제가 변경된 스킬과 일관성 있는지 확인
 
 ### 예제 추가 시
 
