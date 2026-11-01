@@ -1,4 +1,6 @@
-# kiwi-paper — Gemini CLI Instructions
+# kiwi-paper — Antigravity CLI (agy) Instructions
+
+Antigravity CLI는 작업 폴더의 `GEMINI.md`와 `AGENTS.md`를 규칙으로 읽습니다.
 
 이 저장소는 모든 종류의 기술 문서를 나무위키 스타일로 변환하는 도구입니다.
 

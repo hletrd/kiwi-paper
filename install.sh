@@ -52,74 +52,19 @@ OPENCODE_DIR="$HOME/.config/opencode/skills/kiwi-paper"
 copy_skill_doc "$OPENCODE_DIR"
 echo "✓ OpenCode: $OPENCODE_DIR"
 
-# --- 3. Codex CLI, Cursor, Gemini CLI: ~/.agents/skills/kiwi-paper/ ---
+# --- 3. Codex CLI, Cursor: ~/.agents/skills/kiwi-paper/ ---
 CODEX_DIR="$HOME/.agents/skills/kiwi-paper"
 copy_skill_doc "$CODEX_DIR"
 echo "✓ Codex CLI, Cursor: $CODEX_DIR"
 
-# --- 4. Antigravity: ~/.gemini/config/skills/kiwi-paper/ ---
+# --- 4. Antigravity app and CLI (agy): ~/.gemini/config/skills/kiwi-paper/ ---
+# agy turns each skill into a slash command. Gemini CLI stopped serving
+# individual accounts on 2026-06-18, so it gets no command of its own.
 ANTIGRAVITY_DIR="$HOME/.gemini/config/skills/kiwi-paper"
 copy_skill_doc "$ANTIGRAVITY_DIR"
-echo "✓ Antigravity: $ANTIGRAVITY_DIR"
+echo "✓ Antigravity (app, agy CLI): $ANTIGRAVITY_DIR"
 
-# --- 5. Gemini CLI: custom command ---
-GEMINI_CMD_DIR="$HOME/.gemini/commands"
-mkdir -p "$GEMINI_CMD_DIR"
-cat > "$GEMINI_CMD_DIR/kiwi-paper.toml" << 'TOML'
-description = "논문/기술문서를 나무위키 스타일로 변환"
-prompt = """
-You are kiwi-paper, a tool that converts technical documents into namu.wiki-style Korean documents.
-
-Read the SKILL.md file at ~/.claude/skills/kiwi-paper/SKILL.md for the full conversion rules and pipeline.
-
-Follow the 4-step pipeline:
-1. Draft: Convert the input to namu.wiki-style markdown
-2. Refine: Check structure, humor balance, add links and images
-3. Humanize: Remove AI-generated writing patterns, make it natural Korean
-4. Render: Generate HTML with `node ~/.claude/skills/kiwi-paper/renderer/src/render.mjs -i <file> -o <dir>`
-
-Key rules:
-- Strikethrough (~~) humor: 3-5 per section, 15+ total
-- Footnotes: 8+ per document (source:humor = 6:4)
-- Trivia section (여담): 5+ items
-- Images: extract ALL figures from source, WebSearch if needed
-- Supports 12 document types (papers, specs, API docs, manuals, news, etc.)
-
-The user's input: {{args}}
-"""
-TOML
-echo "✓ Gemini CLI: $GEMINI_CMD_DIR/kiwi-paper.toml (use /kiwi-paper)"
-
-# --- 6. Gemini CLI: configure context.fileName to also read AGENTS.md ---
-json_valid() {
-  if command -v python3 >/dev/null 2>&1; then
-    python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$1" 2>/dev/null
-  elif command -v node >/dev/null 2>&1; then
-    node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$1" 2>/dev/null
-  fi
-}
-
-GEMINI_SETTINGS="$HOME/.gemini/settings.json"
-if [ -f "$GEMINI_SETTINGS" ]; then
-  # Check if the file is valid JSON first (skipped when neither python3 nor node exists)
-  if ! json_valid "$GEMINI_SETTINGS"; then
-    echo "  ⚠ Warning: $GEMINI_SETTINGS exists but is not valid JSON. Please fix it manually and add \"AGENTS.md\" to context.fileName."
-  elif ! grep -q 'AGENTS.md' "$GEMINI_SETTINGS" 2>/dev/null; then
-    echo "  ℹ Tip: Add \"AGENTS.md\" to context.fileName in $GEMINI_SETTINGS for full AGENTS.md support"
-  fi
-else
-  mkdir -p "$HOME/.gemini"
-  cat > "$GEMINI_SETTINGS" << 'JSON'
-{
-  "context": {
-    "fileName": ["GEMINI.md", "AGENTS.md"]
-  }
-}
-JSON
-  echo "  ✓ Gemini settings: context.fileName configured to read AGENTS.md"
-fi
-
-# --- 7. Install renderer dependencies ---
+# --- 5. Install renderer dependencies ---
 if command -v node >/dev/null 2>&1; then
   # commander 15 requires Node.js >= 22.12
   if node -e 'const [a, b] = process.versions.node.split(".").map(Number); process.exit(a > 22 || (a === 22 && b >= 12) ? 0 : 1)'; then
@@ -140,7 +85,7 @@ else
   echo "⚠ Node.js not found. HTML renderer will not be available."
 fi
 
-# --- 8. Clean up cloned repo (only with --cleanup flag) ---
+# --- 6. Clean up cloned repo (only with --cleanup flag) ---
 if [ "${1:-}" = "--cleanup" ] && [ -d "$SCRIPT_DIR/.git" ] && [ "$SCRIPT_DIR" != "$CLAUDE_DIR" ]; then
   REAL_SCRIPT=$(cd "$SCRIPT_DIR" && pwd -P)
   REAL_INSTALL=$(cd "$CLAUDE_DIR" && pwd -P)
@@ -162,7 +107,6 @@ echo "Usage:"
 echo "  Claude Code:  /kiwi-paper <file|url>"
 echo "  OpenCode:     \"kiwi-paper로 변환해줘\" (skill 도구로 자동 로드)"
 echo "  Codex CLI:    \$kiwi-paper <file|url>"
-echo "  Gemini CLI:   /kiwi-paper <file|url>"
 echo "  Cursor:       Agent 채팅에서 /kiwi-paper"
-echo "  Antigravity:  /kiwi-paper <file|url>"
+echo "  Antigravity:  /kiwi-paper <file|url> (앱, agy CLI)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

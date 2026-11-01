@@ -167,9 +167,10 @@ AI 언어 탐지 체크리스트, Before/After 예시, 문장 리듬과 톤 장�
 마크다운 파일을 저장한 뒤, 내장 렌더러를 실행하여 HTML을 생성합니다:
 
 ```bash
-# kiwi-paper 저장소의 renderer 사용
-node <kiwi-paper-path>/renderer/src/render.mjs -i <output.md> -o <output-dir>
+node ~/.claude/skills/kiwi-paper/renderer/src/render.mjs -i <output.md> -o <output-dir>
 ```
+
+`install.sh`는 어떤 도구용으로 설치하든 렌더러를 `~/.claude/skills/kiwi-paper/renderer/` 한 곳에만 둡니다. kiwi-paper 저장소 안에서 작업 중이면 `renderer/src/render.mjs`를 써도 됩니다.
 
 렌더러는 나무위키 Liberty 스킨 스타일의 HTML을 생성합니다:
 - 라이트/다크 모드 지원 (시스템 설정 자동 감지)

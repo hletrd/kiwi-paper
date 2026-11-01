@@ -74,7 +74,7 @@ cd kiwi-paper
 
 `install.sh`가 하는 일:
 1. `SKILL.md`, `references/`, 렌더러를 `~/.claude/skills/kiwi-paper/`에 복사
-2. 다른 도구용으로 `SKILL.md`와 `references/`를 `~/.agents/skills/`, `~/.config/opencode/skills/`, `~/.gemini/config/skills/`에 복사하고 Gemini CLI용 `/kiwi-paper` 명령 등록
+2. 다른 도구용으로 `SKILL.md`와 `references/`를 `~/.agents/skills/`, `~/.config/opencode/skills/`, `~/.gemini/config/skills/`(Antigravity 앱과 `agy`)에 복사
 3. 렌더러 폴더에서 `npm ci` (Node.js 22.12 이상일 때)
 
 스킬만 필요하다면:
@@ -164,12 +164,13 @@ Claude Code 외에도 주요 AI 도구는 대부분 지원합니다.
 | [OpenCode](https://opencode.ai) | 프롬프트로 요청 (자동 로드) | `~/.config/opencode/skills/kiwi-paper/` |
 | [Codex CLI](https://github.com/openai/codex) | `$kiwi-paper` | `~/.agents/skills/kiwi-paper/` |
 | Codex App | `$kiwi-paper` | Codex CLI와 동일 |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `/kiwi-paper` | `~/.gemini/commands/kiwi-paper.toml` |
 | [Cursor](https://cursor.com) | Agent 채팅에서 `/kiwi-paper` | `~/.agents/skills/kiwi-paper/` |
-| [Antigravity](https://antigravity.google) | `/kiwi-paper` | `~/.gemini/config/skills/kiwi-paper/` |
+| [Antigravity](https://antigravity.google) 앱, CLI(`agy`) | `/kiwi-paper` | `~/.gemini/config/skills/kiwi-paper/` |
 | [Claude Cowork](https://claude.com/product/cowork) | 프롬프트로 요청 | 파일 읽기로 SKILL.md 참조 |
 
-`./install.sh` 한 번이면 Cursor와 Antigravity까지 전부 됩니다. 프로젝트 단위 룰 파일이 필요하면 `CURSOR.mdc`를 `.cursor/rules/kiwi-paper.mdc`로 복사해 쓰면 됩니다. Claude Cowork는 SKILL.md를 직접 읽어주면 됩니다.
+`./install.sh` 한 번이면 Cursor와 Antigravity까지 전부 됩니다. Antigravity는 앱과 CLI(`agy`)가 같은 스킬 폴더를 읽어서 `agy`에서도 `/kiwi-paper`로 바로 부르면 됩니다. 프로젝트 단위 룰 파일이 필요하면 `CURSOR.mdc`를 `.cursor/rules/kiwi-paper.mdc`로 복사해 쓰면 됩니다. Claude Cowork는 SKILL.md를 직접 읽어주면 됩니다.
+
+Gemini CLI는 2026년 6월 18일부터 개인 계정 요청을 받지 않아서 지원 목록에서 뺐습니다. 대신 Antigravity CLI(`agy`)를 쓰면 되고, 예전 설치 스크립트가 만든 `~/.gemini/commands/kiwi-paper.toml`은 지워도 됩니다.
 
 ## 기여
 
